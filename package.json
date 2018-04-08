@@ -42,7 +42,8 @@
   "main": "server.js",
   "name": "orion",
   "scripts": {
-    "test": "tap test/*.js"
+    "test": "tap test/*.js",
+    "start": "node server.js"
   },
   "version": "1.0.0"
 }
