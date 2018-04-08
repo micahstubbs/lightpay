@@ -10,7 +10,7 @@ const {swapAddress} = require('./../swaps');
 const {swapOutput} = require('./../swaps');
 const {swapScriptDetails} = require('./../swaps');
 
-const blockSearchDepth = 9;
+const blockSearchDepth = 3;
 const minSwapTokens = 1e5;
 const minBlocksUntilRefundHeight = 70;
 const network = 'testnet';

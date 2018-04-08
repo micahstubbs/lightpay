@@ -21,10 +21,6 @@
     margin: 0 auto;
   }
 
-.card-body {
-    padding: 3.25rem;
-}
-
 .checkmark__circle {
   stroke-dasharray: 166;
   stroke-dashoffset: 166;
