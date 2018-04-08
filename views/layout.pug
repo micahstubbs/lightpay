@@ -1,0 +1,67 @@
+doctype html
+html(lang="en")
+  head
+    link(
+      crossorigin="anonymous",
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css",
+      integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm",
+      rel="stylesheet"
+    )
+    link(
+      crossorigin="anonymous",
+      href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css",
+      integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN",
+      rel="stylesheet"
+    )
+    link(rel="stylesheet", href="/css/main.css")
+    meta(charset="utf-8")
+    meta(
+      content="width=device-width, initial-scale=1, shrink-to-fit=no",
+      name="viewport"
+    )
+    title [LIGHTPAY]
+  body(style="background-color: rgb(92, 92, 92); background-image: url(/img/lightpay_bg.svg)")
+    nav.bg-clear.mb-4.navbar.navbar-expand-lg.navbar-light
+    .mb-5.row
+      .col
+      .col-8
+        a.navbar-brand.text-white(href="#")
+          img(src="/img/lightpay_logo.svg").mr-2
+      .col
+
+    block content
+
+    .pb-5
+    .pb-5
+
+    footer.footer
+      .container.text-center
+        .heading.mb-2
+          strong.text-light Made with ❤️ at c4yt by:
+        .credits
+          small
+            a.text-white(href='https://twitter.com/alexbosworth') @alexbosworth
+            span.text-muted.ml-2.mr-2 \
+            a.text-white(href='https://twitter.com/arrship') @arrship
+            span.text-muted.ml-2.mr-2 \
+            a.text-white(href='https://twitter.com/micahstubbs') @micahstubbs
+            span.text-muted.ml-2.mr-2 \
+            a.text-white(href='https://twitter.com/steve_sarmiento') @steve_sarmiento
+            span.text-muted.ml-2.mr-2 \
+            a.text-white(href='https://twitter.com/uldis') @uldis
+
+    block scripts
+      script(
+        crossorigin="anonymous",
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN",
+        src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+      )
+      script(
+        crossorigin="anonymous",
+        integrity="sha384-feJI7QwhOS+hwpX2zkaeJQjeiwlhOP+SdQDqhgvvo1DsjtiSQByFdThsxO669S2D",
+        src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.bundle.min.js"
+      )
+      script(src="/js/blockchain.js")
+      script(async="true", src="/js/kjua.min.js")
+      script(src="/js/main.js")
+

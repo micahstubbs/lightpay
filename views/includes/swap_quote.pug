@@ -1,0 +1,194 @@
+.collapse.hide.swap-quote.template
+  .border-secondary.card.hide.mb-3
+    .pay-qr.mt-4.text-center
+    .text-center.mb-2.mt-4
+      strong
+        | Scan the code using any Bitcoin wallet to complete this invoice!
+    .text-center.text-muted
+      | In the case of a refund please remember to download your paper wallet.
+    .card-header(hidden)
+      ul.card-header-tabs.nav.nav-tabs(hidden, role="tablist")
+        li.nav-item
+          a.active.nav-link#pay-tab(
+            aria-controls="pay",
+            aria-selected="true",
+            data-toggle="tab",
+            href="#pay",
+            role="tab"
+          )
+            i.fa.fa-exchange.mr-1
+            span #{' '}
+            span Pay to Swap
+        li.nav-item
+          a.nav-link#refund-tab(
+            aria-controls="refund",
+            aria-selected="false",
+            data-toggle="tab",
+            href="#refund",
+            role="tab"
+          )
+            i.fa.fa-info.mr-1
+            span #{' '}
+            span Refund Details
+        li.nav-item
+          a.nav-link#cancel-tab(
+            aria-controls="cancel",
+            aria-selected="false",
+            data-toggle="tab",
+            href="#cancel",
+            role="tab"
+          )
+            i.fa.fa-trash.mr-1
+            span #{' '}
+            span Cancel
+    .card-body
+      .tab-content
+        .active.fade.show.tab-pane#pay(
+          aria-labelledby="pay-tab",
+          role="tabpanel"
+        )
+          .alert.alert-secondary.collapse.show.invoice-details(hidden, role="alert")
+            h4.alert-heading
+              span Paying
+              span #{' '}
+              span.send-amount
+              span #{' '}
+              span.testnet-currency-qualifier t
+              span.send-currency-code BTC
+              span #{' '}
+              span (
+              span.fiat-send-amount
+              span #{' '}
+              span.testnet-currency-qualifier t
+              span.fiat-currency-code USD
+              span )
+            p.description
+              i.fa.fa-quote-left.mr-1.text-muted
+              span #{' '}
+              span.payment-description.mr-1
+              span #{' '}
+              i.fa.fa-quote-right.text-muted
+            hr
+            p.mb-0
+              span Sending to
+              span #{' '}
+              a.destination-url(href='#')
+              code.payment-public-key.text-muted
+
+          form.send-to-swap.text-center
+            a.btn.btn-lg.btn-primary.download-file.mr-3.save-redeem-script(href="#", style="background: rgba(219, 119, 131, 0.9); border-color: rgb(219, 119, 131);")
+              span Refund Wallet
+            a.btn.btn-lg.btn-primary.disabled.chain-link(href="#", style="background: rgba(120, 224, 196, 0.9); border-color: rgb(120, 224, 196);")
+              span Payment Link
+            .collapse.hide.make-payment(hidden)
+              .form-group.swap-payment-details
+                label
+                  span Send
+                  span #{' '}
+                  strong tBTC
+                  span #{' '}
+                  span to Swap Address:
+                input.form-control.form-control-lg.swap-address(
+                  readonly,
+                  type="text",
+                  value="Loading...",
+                )
+              .form-group.swap-payment-details
+                label Amount:
+                input.form-control.form-control-lg.swap-amount(
+                  readonly,
+                  type="text",
+                  value="Loading..."
+                )
+                small.form-text.text-muted
+                  | Make sure to send the exact amount!
+              .alert.alert-secondary.waiting-notification(role="alert")
+                h4.alert-heading.collapse.hide.tx-found Swap Pending
+                h5.pull-right
+                  i.fa.fa-asterisk.fa-spin
+                a.alert-link.check-swap.mr-4.pull-right(
+                  data-pending_title="Checking...",
+                  href='#',
+                  title="Check?",
+                )
+                  | Check?
+                span.collapse.show.waiting-label Waiting for deposit...
+                span.collapse.found-waiting.hide
+                  a.alert-link.deposit-transaction-id(
+                    href='#',
+                    target="_blank"
+                  )
+                    | Deposit found
+                  span #{' '}
+                  span Waiting for
+                  span #{' '}
+                  span.needed-confirmations-count
+                  span #{' '}
+                  span confirmation
+                  span.plural-confirmation(hidden) s
+                  span ...
+        .fade.tab-pane#refund(aria-labelledby="refund-tab", role="tabpanel")
+          form.refund-details(auto-complete="off")
+            .form-group
+              label Redeem Script:
+              textarea.form-control.redeem-script(readonly, rows="3")
+              small.form-text.text-muted
+                span You can use
+                span #{' '}
+                code decodescript
+                span #{' '}
+                span to check this smart contract.
+            .form-group
+              label.col-form-label Refund Valid After:
+              input.form-control.timeout-block-height(
+                readonly,
+                type="text"
+              )
+              small.form-text.mb-2.text-muted
+                | A refund transaction cannot be broadcast before this block.
+            .form-group
+              label.col-form-label
+                | Transaction Id:
+              input.form-control.swap-transaction-id(
+                placeholder="Waiting for swap funding transaction...",
+                readonly,
+              )
+              small.form-text.mb-2.text-muted
+                | The transaction id that sends to the swap address.
+            .form-group
+              label.col-form-label
+                | Output Index:
+              input.form-control.refund-output-index(
+                placeholder="Waiting for swap funding transaction...",
+                readonly,
+                type="number"
+              )
+              small.form-text.mb-2.text-muted
+                | The output index that sends to the swap address.
+            .form-group
+              label.col-form-label
+                | Sent Amount:
+              input.form-control.refund-tokens-total(
+                placeholder="Waiting for swap funding transaction...",
+                readonly,
+                type="number",
+              )
+              small.form-text.mb-2.text-muted
+                | The complete amount sent in the send to the swap address.
+        .fade.tab-pane#cancel(aria-labelledby="cancel-tab", role="tabpanel")
+          p.card-text
+            | Don't want to go through with the swap? You can cancel your swap
+            | at any time before sending payment.
+          button.btn.btn-block.btn-lg.btn-danger.delete-swap.mb-2
+            i.fa.fa-trash
+            span #{' '}
+            span Cancel Swap
+          p.card-text.text-muted
+            small
+              | If you have already sent payment to the swap you cannot cancel.
+              | Instead you must wait for the refund timeout and execute the
+              | refund.
+            small
+              span #{' '}
+              a(href="/refund", target="_blank") Refund Transaction.
+
