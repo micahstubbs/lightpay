@@ -762,6 +762,8 @@ App.submitCreateSwapQuote = function(event) {
   const address = addressInput.val().trim();
   const invoice = invoiceInput.val().trim();
 
+  $('.all-credits').prop('hidden', true);
+
   if (!App.invoice_details[invoice]) {
     return;
   }
