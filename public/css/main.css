@@ -1,3 +1,7 @@
+html, body {
+    margin: 0;
+    height: 100%;
+}
 
 .col-8 {
     max-width: 50.666667%;
@@ -24,6 +28,21 @@
 .card-body {
     padding: 3.25rem;
 }
+
+/*div.footer {
+  position: relative;
+  left: 50%;
+}*/
+
+div.all-credits {
+  position: absolute;
+  left: 50%;
+  margin: 0 auto;
+  bottom: 3.25rem;
+  left: 120px;
+  width: 100%;
+}
+
 
 .checkmark__circle {
   stroke-dasharray: 166;
