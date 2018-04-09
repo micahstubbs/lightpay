@@ -23,3 +23,5 @@ Lightpay makes it easy for any user anywhere to use the lightning network.
 Lightpay makes it easy for a user with any bitcoin wallet to pay lightning invoices.
 Lightpay makes it easy for any user to become a swap provider.
 Lightpay makes it easy to pay a lightning invoice without needing to mess with code to spin up a lightning node or a bitcoin full node.
+
+![lightpay](public/img/lightpay.png)
