@@ -9,7 +9,7 @@ const {getTransaction} = require('./../chain');
 const {returnResult} = require('./../async-util');
 const {swapAddress} = require('./../swaps');
 
-const blockSearchRateLimit = 300;
+const blockSearchRateLimit = 500;
 
 /** Find the swap funding transaction that matches a swap key
 

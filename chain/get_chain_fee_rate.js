@@ -4,7 +4,7 @@ const parseTokenValue = require('./parse_token_value');
 const cmd = require('./conf/rpc_commands').estimateSmartFee;
 
 const bytesPerKb = 1e3;
-const defaultBlockCount = 6;
+const defaultBlockCount = 20;
 
 /** Get blockchain fee rate
 

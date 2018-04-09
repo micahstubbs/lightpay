@@ -1,7 +1,7 @@
 const App = {
   address_details: {},
   change_events: 'change keyup paste',
-  check_for_swap_interval_ms: 5000,
+  check_for_swap_interval_ms: 1000,
   check_for_swap_interval: null,
   invoice_details: {},
   invoice_refund_keypairs: {},
