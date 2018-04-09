@@ -4,7 +4,7 @@ Atomic swaps for the Lightning Payment Network
 @ C4YT Hackathon
 
 LightPay Team
-@alexbosworth @micahstubbs @arrship @steve_sarmiento @uldis
+[@alexbosworth](https://twitter.com/alexbosworth) [@micahstubbs](https://twitter.com/micahstubbs) [@arrship](https://twitter.com/arrship) [@steve_sarmiento](https://twitter.com/steve_sarmiento) [@uldis](https://twitter.com/uldis)
 
 ### The Problem 
 While the lightning network is allowing for faster transaction processing through open channel payments allowing for cheaper fees. Adoption will take time to reach a wider audience. 
