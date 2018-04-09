@@ -1,4 +1,20 @@
 
+a:link {
+  color: #50E3C2;
+}
+
+a:visited {
+  color: #969696
+}
+
+a:hover {
+  color: #bdbdbd;
+}
+
+a:active {
+  color: #bdbdbd;
+}
+
 .col-8 {
     max-width: 50.666667%;
     min-width: 470px;
