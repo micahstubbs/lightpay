@@ -2,6 +2,54 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Project Overview
+
+LightPay (package name: "orion") enables paying Lightning Network invoices using any Bitcoin wallet via atomic swaps. A swap provider pays the Lightning invoice on the user's behalf in exchange for an on-chain Bitcoin payment plus a small fee. Built at the C4YT Hackathon.
+
+Requires Node.js 8.9.4 / npm 5.6.0.
+
+## Commands
+
+```bash
+npm install          # Install dependencies
+npm start            # Start server (port 9889, or PORT/OCW_PORT env vars)
+npm test             # Run all tests (tap test/*.js) — spawns bcoin regtest daemon
+npx tap test/test_swap_address.js   # Run a single test file
+```
+
+Integration tests (`claim_success.js`, `refund_success.js`) automatically spawn and stop a bcoin regtest daemon. Unit tests (`test_swap_address.js`, `test_swap_details.js`, etc.) run standalone.
+
+## Architecture
+
+Express server (`server.js`) with Pug templates and a REST API at `/api/v0`.
+
+### Core Modules
+
+- **`swaps/`** — Pure swap logic: Bitcoin script generation (`pk_swap_script`, `pkhash_swap_script`), swap address derivation, claim/refund transaction building. Uses `bitcoinjs-lib`.
+- **`service/`** — Server-side orchestration: creating swaps, checking status, finding swap transactions in blocks/mempool, invoice/address details, price lookups.
+- **`chain/`** — Bitcoin chain RPC interaction (`chain_rpc` wraps `node-bitcoin-rpc`): block queries, tx broadcast, key generation, regtest daemon management.
+- **`lightning/`** — Lightning Network via `ln-service`: paying invoices, creating addresses.
+- **`routers/api.js`** — REST API routes delegating to service functions.
+- **`async-util/`** — Callback helpers (`returnJson`, `returnResult`) for the async/callback pattern used throughout.
+
+### API Endpoints (`/api/v0`)
+
+- `GET /address_details/:address` — Chain address info
+- `GET /invoice_details/:invoice` — Lightning invoice details (min 100k sats)
+- `POST /swap_outputs/` — Find swap outpoint by redeem script
+- `POST /swaps/` — Create a new swap
+- `POST /swaps/:payment_hash/` — Check swap status
+
+### Frontend
+
+Pug templates in `views/` (index, refund, layout). `public/browserify/index.js` is browserified and served at `/js/blockchain.js`.
+
+### Coding Patterns
+
+- Node-style callbacks with `async/auto` for multi-step orchestration
+- Error arrays: `[error_code, 'ErrorMessage', detail]`
+- Each module has an `index.js` barrel file
+- Test framework: `tap`
 
 ### Using bv as an AI sidecar
 
