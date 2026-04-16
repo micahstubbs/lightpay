@@ -1,14 +1,7 @@
-const {address} = require('bitcoinjs-lib');
-const {crypto} = require('bitcoinjs-lib');
-const {networks} = require('bitcoinjs-lib');
-const {script} = require('bitcoinjs-lib');
+const {address, networks, payments} = require('bitcoinjs-lib');
 
 const {fromOutputScript} = address;
-const encodeScriptHash = script.scriptHash.output.encode;
-const {hash160} = crypto;
-const {sha256} = crypto;
 const {testnet} = networks;
-const {witnessScriptHash} = script;
 
 const pkSwapScript = require('./pk_swap_script');
 const pkHashSwapScript = require('./pkhash_swap_script');
@@ -61,25 +54,31 @@ module.exports = args => {
 
   const redeemScript = Buffer.from(redeemScriptHex, 'hex');
 
-  // Legacy P2SH output script
-  const p2shLegacyOutput = encodeScriptHash(hash160(redeemScript));
+  // Legacy P2SH: script-hash of the raw redeem script
+  const p2sh = payments.p2sh({
+    redeem: {output: redeemScript, network: testnet},
+    network: testnet,
+  });
 
-  // The witness program is part of the scriptPub: "pay to this script hash"
-  const witnessProgram = witnessScriptHash.output.encode(sha256(redeemScript));
+  // P2WSH: witness-script-hash of the raw redeem script
+  const p2wsh = payments.p2wsh({
+    redeem: {output: redeemScript, network: testnet},
+    network: testnet,
+  });
 
-  // When wrapping for legacy p2sh, the program is hashed more and with RIPE160
-  const p2shWrappedWitnessProgram = encodeScriptHash(hash160(witnessProgram));
-
-  const p2shNestedAddr = fromOutputScript(p2shWrappedWitnessProgram, testnet);
+  // P2SH-wrapped P2WSH (nested segwit)
+  const p2shP2wsh = payments.p2sh({
+    redeem: p2wsh,
+    network: testnet,
+  });
 
   return {
-    p2sh_address: fromOutputScript(p2shLegacyOutput, testnet),
-    p2sh_output_script: p2shLegacyOutput.toString('hex'),
-    p2sh_p2wsh_output_script: p2shWrappedWitnessProgram.toString('hex'),
-    p2sh_p2wsh_address: p2shNestedAddr,
-    p2wsh_address: fromOutputScript(witnessProgram, testnet),
+    p2sh_address: p2sh.address,
+    p2sh_output_script: p2sh.output.toString('hex'),
+    p2sh_p2wsh_output_script: p2shP2wsh.output.toString('hex'),
+    p2sh_p2wsh_address: p2shP2wsh.address,
+    p2wsh_address: p2wsh.address,
     redeem_script: redeemScriptHex.toString('hex'),
-    witness_output_script: witnessProgram.toString('hex'),
+    witness_output_script: p2wsh.output.toString('hex'),
   };
 };
-

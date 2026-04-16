@@ -1,8 +1,9 @@
-const {generateMnemonic} = require('bip39');
-const {HDNode} = require('bitcoinjs-lib');
-const {mnemonicToSeed} = require('bip39');
+const {generateMnemonic, mnemonicToSeed, validateMnemonic} = require('bip39');
 const {networks} = require('bitcoinjs-lib');
-const {validateMnemonic} = require('bip39');
+const {BIP32Factory} = require('bip32');
+const ecc = require('tiny-secp256k1');
+
+const bip32 = BIP32Factory(ecc);
 
 const {OCW_CLAIM_BIP39_SEED} = process.env;
 
@@ -41,13 +42,12 @@ module.exports = ({index, network}) => {
 
   const seed = mnemonicToSeed(OCW_CLAIM_BIP39_SEED);
 
-  const root = HDNode.fromSeedBuffer(seed, networks[network]);
+  const root = bip32.fromSeed(seed, networks[network]);
 
-  const {keyPair} = root.derivePath(`m/0'/0/${index}`);
+  const child = root.derivePath(`m/0'/0/${index}`);
 
   return {
-    private_key: keyPair.toWIF(),
-    public_key: keyPair.getPublicKeyBuffer().toString('hex'),
+    private_key: child.toWIF(),
+    public_key: child.publicKey.toString('hex'),
   };
 };
-

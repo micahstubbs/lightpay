@@ -1,13 +1,6 @@
-const {crypto} = require('bitcoinjs-lib');
-const {script} = require('bitcoinjs-lib');
-const {Transaction} = require('bitcoinjs-lib');
+const {networks, payments, Transaction} = require('bitcoinjs-lib');
 
-const swapScriptDetails = require('./swap_script_details');
-
-const encodeScriptHash = script.scriptHash.output.encode;
-const {hash160} = crypto;
-const {sha256} = crypto;
-const {witnessScriptHash} = script;
+const {testnet} = networks;
 
 const notFound = -1;
 
@@ -45,12 +38,23 @@ module.exports = args => {
   const transaction = Transaction.fromHex(args.transaction);
 
   const txId = transaction.getId();
-  const p2wshScript = witnessScriptHash.output.encode(sha256(redeem));
+
+  const p2sh = payments.p2sh({
+    redeem: {output: redeem, network: testnet},
+    network: testnet,
+  });
+
+  const p2wsh = payments.p2wsh({
+    redeem: {output: redeem, network: testnet},
+    network: testnet,
+  });
+
+  const p2shP2wsh = payments.p2sh({redeem: p2wsh, network: testnet});
 
   const outputScripts = [
-    encodeScriptHash(hash160(redeem)),
-    encodeScriptHash(hash160(p2wshScript)),
-    p2wshScript,
+    p2sh.output,
+    p2shP2wsh.output,
+    p2wsh.output,
   ]
     .map(n => n.toString('hex'));
 
@@ -68,4 +72,3 @@ module.exports = args => {
 
   return {matching_outputs: matchingOutputs};
 };
-

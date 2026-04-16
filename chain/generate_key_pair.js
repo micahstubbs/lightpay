@@ -1,11 +1,9 @@
-const {crypto} = require('bitcoinjs-lib');
-const {ECPair} = require('bitcoinjs-lib');
-const {networks} = require('bitcoinjs-lib');
+const {crypto, networks, payments} = require('bitcoinjs-lib');
+const {ECPairFactory} = require('ecpair');
+const ecc = require('tiny-secp256k1');
 
-const {testnet} = networks;
+const ECPair = ECPairFactory(ecc);
 const {hash160} = crypto;
-
-const notFound = -1;
 
 /** Generate a keypair
 
@@ -30,14 +28,19 @@ module.exports = ({network}) => {
   }
 
   const net = network === 'regtest' ? 'testnet' : network;
+  const btcNetwork = networks[net];
 
-  const keyPair = ECPair.makeRandom({network: networks[net]});
+  const keyPair = ECPair.makeRandom({network: btcNetwork});
+
+  const {address} = payments.p2pkh({
+    pubkey: keyPair.publicKey,
+    network: btcNetwork,
+  });
 
   return {
-    p2pkh_address: keyPair.getAddress(),
-    pk_hash: hash160(keyPair.getPublicKeyBuffer()).toString('hex'),
+    p2pkh_address: address,
+    pk_hash: hash160(keyPair.publicKey).toString('hex'),
     private_key: keyPair.toWIF(),
-    public_key: keyPair.getPublicKeyBuffer().toString('hex'),
+    public_key: keyPair.publicKey.toString('hex'),
   };
 };
-

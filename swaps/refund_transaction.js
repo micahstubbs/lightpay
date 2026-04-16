@@ -1,24 +1,19 @@
 const bip65Encode = require('bip65').encode;
-const {address} = require('bitcoinjs-lib');
-const {crypto} = require('bitcoinjs-lib');
-const {ECPair} = require('bitcoinjs-lib');
-const {networks} = require('bitcoinjs-lib');
-const {OP_0} = require('bitcoin-ops');
-const {OP_FALSE} = require('bitcoin-ops');
-const {OP_PUSHDATA1} = require('bitcoin-ops');
-const {script} = require('bitcoinjs-lib');
-const {Transaction} = require('bitcoinjs-lib');
+const {address, crypto, networks, script, Transaction} = require('bitcoinjs-lib');
+const {ECPairFactory} = require('ecpair');
+const ecc = require('tiny-secp256k1');
+const {OP_0, OP_FALSE, OP_PUSHDATA1} = require('bitcoin-ops');
 
 const chain = require('./../chain').constants;
 const numberAsBuffer = require('varuint-bitcoin').encode;
 const scriptBuffersAsScript = require('./script_buffers_as_script');
 const swapScriptDetails = require('./swap_script_details');
 
+const ECPair = ECPairFactory(ecc);
 const {SIGHASH_ALL} = Transaction;
 const {sha256} = crypto;
 const {testnet} = networks;
 const {toOutputScript} = address;
-const {witnessScriptHash} = script;
 
 const compressedPubKeySize = chain.compressed_public_key_size;
 const dustRatio = 1 / 3;
@@ -30,6 +25,8 @@ const nestedScriptPubHexLength = 46;
 const sequenceLength = chain.sequence_byte_length;
 const shortPushdataLength = chain.short_push_data_length;
 const vRatio = chain.witness_byte_discount_denominator;
+
+const encodeSig = (sig, hashType) => script.signature.encode(sig, hashType);
 
 /** Build a refund transaction to claim funds back from a swap
 
@@ -122,7 +119,7 @@ module.exports = args => {
 
   // The public key buffer is stubbed all zeros when there is no private key
   if (!!args.private_key) {
-    pubKey = ECPair.fromWIF(args.private_key, testnet).getPublicKeyBuffer();
+    pubKey = ECPair.fromWIF(args.private_key, testnet).publicKey;
   } else {
     pubKey = Buffer.alloc(compressedPubKeySize);
   }
@@ -151,7 +148,7 @@ module.exports = args => {
 
     const sigHash = tx.hashForSignature(i, redeemScript, SIGHASH_ALL);
 
-    const sig = dummyKey.sign(sigHash).toScriptSignature(SIGHASH_ALL);
+    const sig = encodeSig(dummyKey.sign(sigHash, true), SIGHASH_ALL);
 
     const pushDatas = scriptBuffersAsScript([sig, space]);
 
@@ -227,9 +224,7 @@ module.exports = args => {
 
     const sigHash = tx.hashForSignature(i, redeemScript, SIGHASH_ALL);
 
-    const sig = signingKey.sign(sigHash).toScriptSignature(SIGHASH_ALL);
-
-    const pushDatas = scriptBuffersAsScript([sig, space]);
+    const sig = encodeSig(signingKey.sign(sigHash, true), SIGHASH_ALL);
 
     const inputScriptElements = [sig, space, OP_PUSHDATA1, redeemScript];
 
@@ -263,11 +258,10 @@ module.exports = args => {
 
     const sigHash = tx.hashForWitnessV0(i, redeemScript, tokens, SIGHASH_ALL);
 
-    const sig = signingKey.sign(sigHash).toScriptSignature(SIGHASH_ALL);
+    const sig = encodeSig(signingKey.sign(sigHash, true), SIGHASH_ALL);
 
     return [[sig, space, redeemScript]].forEach((w, i) => tx.setWitness(i, w));
   });
 
   return {transaction: tx.toHex()};
 };
-

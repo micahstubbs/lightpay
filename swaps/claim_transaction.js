@@ -1,26 +1,19 @@
-const {address} = require('bitcoinjs-lib');
 const bip65Encode = require('bip65').encode;
-const {crypto} = require('bitcoinjs-lib');
-const {ECPair} = require('bitcoinjs-lib');
-const {ECSignature} = require('bitcoinjs-lib');
-const {networks} = require('bitcoinjs-lib');
+const {address, crypto, networks, script, Transaction} = require('bitcoinjs-lib');
+const {ECPairFactory} = require('ecpair');
+const ecc = require('tiny-secp256k1');
 const numberAsBuffer = require('varuint-bitcoin').encode;
-const {OP_0} = require('bitcoin-ops');
-const {OP_PUSHDATA1} = require('bitcoin-ops');
-const {script} = require('bitcoinjs-lib');
-const {Transaction} = require('bitcoinjs-lib');
+const {OP_0, OP_PUSHDATA1} = require('bitcoin-ops');
 
 const chainConstants = require('./../chain').constants;
 const scriptBuffersAsScript = require('./script_buffers_as_script');
 const swapScriptDetails = require('./swap_script_details');
 
-const encodeScriptHash = script.scriptHash.output.encode;
-const {hash160} = crypto;
+const ECPair = ECPairFactory(ecc);
 const hashAll = Transaction.SIGHASH_ALL;
 const {sha256} = crypto;
 const {testnet} = networks;
 const {toOutputScript} = address;
-const {witnessScriptHash} = script;
 
 const dustRatio = 1 / 3;
 const ecdsaSignatureLength = chainConstants.ecdsa_sig_max_byte_length;
@@ -30,6 +23,8 @@ const nestedScriptPubHexLength = 46;
 const sequenceLength = chainConstants.sequence_byte_length;
 const shortPushdataLength = chainConstants.short_push_data_length;
 const vRatio = chainConstants.witness_byte_discount_denominator;
+
+const encodeSig = (sig, hashType) => script.signature.encode(sig, hashType);
 
 /** Make a claim chain swap output transaction that completes a swap
 
@@ -144,7 +139,7 @@ module.exports = args => {
 
     const sigHash = tx.hashForSignature(i, redeemScript, hashAll);
 
-    const sig = signingKey.sign(sigHash).toScriptSignature(hashAll);
+    const sig = encodeSig(signingKey.sign(sigHash, true), hashAll);
 
     const pushDatas = scriptBuffersAsScript([sig, preimage]);
 
@@ -212,7 +207,7 @@ module.exports = args => {
 
     const sigHash = tx.hashForSignature(i, redeemScript, hashAll);
 
-    const sig = signingKey.sign(sigHash).toScriptSignature(hashAll);
+    const sig = encodeSig(signingKey.sign(sigHash, true), hashAll);
 
     const inputScriptElements = [sig, preimage, OP_PUSHDATA1, redeemScript];
 
@@ -235,7 +230,7 @@ module.exports = args => {
 
     const sigHash = tx.hashForWitnessV0(i, redeemScript, tokens, hashAll);
 
-    const signature = signingKey.sign(sigHash).toScriptSignature(hashAll);
+    const signature = encodeSig(signingKey.sign(sigHash, true), hashAll);
 
     return [[signature, preimage, redeemScript]]
       .forEach((witness, i) => tx.setWitness(i, witness));
@@ -243,4 +238,3 @@ module.exports = args => {
 
   return {transaction: tx.toHex()};
 };
-
