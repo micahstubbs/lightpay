@@ -15,22 +15,22 @@ const {OCW_LND_TLS_CERT} = process.env;
     payment_secret: <Payment Preimage Hex String>
   }
 */
-module.exports = ({invoice}, cbk) => {
+module.exports = async ({invoice}, cbk) => {
   if (!invoice) {
     return cbk([400, 'ExpectedInvoice']);
   }
 
-  const {lnd} = authenticatedLndGrpc({
-    cert: OCW_LND_TLS_CERT,
-    macaroon: OCW_LND_MACAROON,
-    socket: OCW_LND_GRPC_HOST,
-  });
+  try {
+    const {lnd} = authenticatedLndGrpc({
+      cert: OCW_LND_TLS_CERT,
+      macaroon: OCW_LND_MACAROON,
+      socket: OCW_LND_GRPC_HOST,
+    });
 
-  return payViaPaymentRequest({lnd, request: invoice}, (err, res) => {
-    if (!!err) {
-      return cbk([503, 'FailedToPayInvoice', err]);
-    }
+    const {secret} = await payViaPaymentRequest({lnd, request: invoice});
 
-    return cbk(null, {payment_secret: res.secret});
-  });
+    return cbk(null, {payment_secret: secret});
+  } catch (err) {
+    return cbk([503, 'FailedToPayInvoice', err]);
+  }
 };

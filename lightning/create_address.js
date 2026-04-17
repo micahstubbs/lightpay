@@ -13,18 +13,18 @@ const {OCW_LND_TLS_CERT} = process.env;
     chain_address: <Chain Address String>
   }
 */
-module.exports = ({}, cbk) => {
-  const {lnd} = authenticatedLndGrpc({
-    cert: OCW_LND_TLS_CERT,
-    macaroon: OCW_LND_MACAROON,
-    socket: OCW_LND_GRPC_HOST,
-  });
+module.exports = async ({}, cbk) => {
+  try {
+    const {lnd} = authenticatedLndGrpc({
+      cert: OCW_LND_TLS_CERT,
+      macaroon: OCW_LND_MACAROON,
+      socket: OCW_LND_GRPC_HOST,
+    });
 
-  return createChainAddress({lnd, format: 'p2wpkh'}, (err, res) => {
-    if (!!err) {
-      return cbk([503, 'FailedToCreateAddress', err]);
-    }
+    const {address} = await createChainAddress({lnd, format: 'p2wpkh'});
 
-    return cbk(null, {chain_address: res.address});
-  });
+    return cbk(null, {chain_address: address});
+  } catch (err) {
+    return cbk([503, 'FailedToCreateAddress', err]);
+  }
 };
