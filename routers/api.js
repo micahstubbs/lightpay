@@ -57,6 +57,8 @@ module.exports = ({log}) => {
       currency: body.currency,
       invoice: body.invoice,
       refund_address: body.refund_address,
+      refund_public_key: body.refund_public_key,
+      witness_type: body.witness_type,
     },
     returnJson({log, res}));
   });
