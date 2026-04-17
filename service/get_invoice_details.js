@@ -5,7 +5,17 @@ const {decode} = require('bolt11');
 const getPrice = require('./get_price');
 const {returnResult} = require('./../async-util');
 
+const bolt12OfferPrefix = /^lno1/i;
+const bolt12InvoicePrefix = /^lni1/i;
+
 /** Get invoice details
+
+  Accepts BOLT 11 invoices. BOLT 12 offers and invoices are detected
+  and rejected with a structured error — LightPay's swap protocol
+  needs the payment_hash to be known up front, which a BOLT 12 offer
+  doesn't provide until an invoice has been fetched from the node.
+  A future task can add BOLT 12 support by calling
+  fetchBolt12Invoice via ln-service before reaching this service.
 
   {
     [min_tokens]: <Minimum Tokens Number>
@@ -28,6 +38,18 @@ const {returnResult} = require('./../async-util');
   }
 */
 module.exports = (args, cbk) => {
+  if (!args.invoice) {
+    return cbk([400, 'ExpectedInvoice']);
+  }
+
+  if (bolt12OfferPrefix.test(args.invoice)) {
+    return cbk([400, 'Bolt12OffersNotSupported']);
+  }
+
+  if (bolt12InvoicePrefix.test(args.invoice)) {
+    return cbk([400, 'Bolt12InvoicesNotSupported']);
+  }
+
   return asyncAuto({
     // Assumed currency code
     currency: asyncConstant('BTC'),
@@ -133,4 +155,3 @@ module.exports = (args, cbk) => {
   },
   returnResult({of: 'invoiceDetails'}, cbk));
 };
-
