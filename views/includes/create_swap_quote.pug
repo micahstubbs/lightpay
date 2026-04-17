@@ -55,6 +55,31 @@
                   i.fa.fa-quote-left.mr-2.text-muted
                   span.payment-description.mr-2
                   i.fa.fa-quote-right.text-muted
+        .form-group.witness-type-selector
+          label
+            span.mb-2.text-secondary
+              strong Swap Output Script Type
+            br
+            small.text-muted
+              | Choose the Bitcoin script format used to lock the on-chain
+              | swap funds. Legacy uses P2SH (compatible with every wallet).
+              | Taproot uses P2TR (BIP-341) for smaller, more private swaps.
+          .btn-group.btn-group-toggle.witness-type-group.d-flex(data-toggle="buttons")
+            label.btn.btn-outline-secondary.active.flex-fill
+              input.witness-type-input(
+                type="radio",
+                name="witness-type",
+                value="legacy",
+                checked
+              )
+              span Legacy (P2SH)
+            label.btn.btn-outline-secondary.flex-fill
+              input.witness-type-input(
+                type="radio",
+                name="witness-type",
+                value="taproot"
+              )
+              span Taproot (P2TR)
         .collapse.form-group.hide.refund-address-entry
           label
             span Refund Address:

@@ -306,24 +306,15 @@ App.clickedShowSwap = function(event) {
     currency: <Currency Code String>
     invoice: <Bolt 11 Invoice String>
     refund_address: <Refund Address String>
+    [refund_public_key]: <Compressed Refund Public Key Hex String> (taproot only)
+    [witness_type]: 'legacy' | 'taproot' (default 'legacy')
   }
 
-  @returns via cbk
-  {
-    destination_public_key: <Destination Public Key Hex String>
-    invoice: <Lightning Invoice String>
-    payment_hash: <Payment Hash Hex String>
-    redeem_script: <Redeem Script Hex String>
-    refund_address: <Refund Address String>
-    refund_public_key_hash: <Refund Public Key Hash Hex String>
-    swap_amount: <Swap Amount Number>
-    swap_fee: <Swap Fee Tokens Number>
-    swap_key_index: <Swap Key Index Number>
-    swap_p2sh_address: <Swap Chain Legacy P2SH Base58 Address String>
-    swap_p2sh_p2wsh_address: <Swap Chain P2SH Nested SegWit Address String>
-    swap_p2wsh_address: <Swap Chain P2WSH Bech32 Address String>
-    timeout_block_height: <Swap Expiration Date Number>
-  }
+  @returns via cbk — see service/create_swap.js for response shape.
+  The shape depends on witness_type:
+    legacy:  { swap_p2sh_address, swap_p2wsh_address, redeem_script, ... }
+    taproot: { swap_p2tr_address, claim_script, refund_script,
+               claim_control_block, refund_control_block, output_script, ... }
 */
 App.createSwap = (args, cbk) => {
   if (!args.currency) {
@@ -338,10 +329,18 @@ App.createSwap = (args, cbk) => {
     return cbk([0, 'ExpectedRefundAddress']);
   }
 
+  const witnessType = args.witness_type || 'legacy';
+
+  if (witnessType === 'taproot' && !args.refund_public_key) {
+    return cbk([0, 'ExpectedRefundPublicKey']);
+  }
+
   const post = {
     currency: args.currency,
     invoice: args.invoice,
     refund_address: args.refund_address,
+    refund_public_key: args.refund_public_key,
+    witness_type: witnessType,
   };
 
   App.makeRequest({post, api: 'swaps/'})
@@ -366,14 +365,6 @@ App.createSwap = (args, cbk) => {
         throw new Error('ExpectedRefundAddress');
       }
 
-      if (!details.refund_public_key_hash) {
-        throw new Error('ExpectedRefundPublicKeyHash');
-      }
-
-      if (!details.redeem_script) {
-        throw new Error('ExpectedRedeemScript');
-      }
-
       if (!details.swap_amount) {
         throw new Error('ExpectedSwapAmount');
       }
@@ -386,20 +377,42 @@ App.createSwap = (args, cbk) => {
         throw new Error('ExpectedSwapKeyIndex');
       }
 
-      if (!details.swap_p2sh_address) {
-        throw new Error('ExpectedSwapP2shAddress');
-      }
-
-      if (!details.swap_p2sh_p2wsh_address) {
-        throw new Error('ExpectedSwapP2shAddress');
-      }
-
-      if (!details.swap_p2wsh_address) {
-        throw new Error('ExpectedSwapP2wshAddress');
-      }
-
       if (!details.timeout_block_height) {
         throw new Error('ExpectedTimeoutBlockHeight');
+      }
+
+      if (details.witness_type === 'taproot') {
+        if (!details.swap_p2tr_address) {
+          throw new Error('ExpectedSwapP2trAddress');
+        }
+
+        if (!details.claim_script || !details.refund_script) {
+          throw new Error('ExpectedTaprootScripts');
+        }
+
+        if (!details.claim_control_block || !details.refund_control_block) {
+          throw new Error('ExpectedTaprootControlBlocks');
+        }
+      } else {
+        if (!details.refund_public_key_hash) {
+          throw new Error('ExpectedRefundPublicKeyHash');
+        }
+
+        if (!details.redeem_script) {
+          throw new Error('ExpectedRedeemScript');
+        }
+
+        if (!details.swap_p2sh_address) {
+          throw new Error('ExpectedSwapP2shAddress');
+        }
+
+        if (!details.swap_p2sh_p2wsh_address) {
+          throw new Error('ExpectedSwapP2shAddress');
+        }
+
+        if (!details.swap_p2wsh_address) {
+          throw new Error('ExpectedSwapP2wshAddress');
+        }
       }
 
       return details;
@@ -809,6 +822,9 @@ App.submitCreateSwapQuote = function(event) {
   const address = addressInput.val().trim();
   const invoice = invoiceInput.val().trim();
 
+  const witnessType =
+    swap.find('.witness-type-input:checked').val() || 'legacy';
+
   $('.all-credits').prop('hidden', true);
 
   if (!App.invoice_details[invoice]) {
@@ -836,6 +852,8 @@ App.submitCreateSwapQuote = function(event) {
     invoice,
     currency: 'tBTC',
     refund_address: App.invoice_refund_keypairs[invoice].p2pkh_address,
+    refund_public_key: App.invoice_refund_keypairs[invoice].public_key,
+    witness_type: witnessType,
   },
   (err, details) => {
     if (!!err) {
@@ -853,8 +871,10 @@ App.submitCreateSwapQuote = function(event) {
     App.swaps[details.payment_hash] = details;
 
     const redeemInfoJsonSpacing = 2;
-    const swapAddress = details.swap_p2sh_address;
-    // const swapAddress = details.swap_p2sh_p2wsh_address;
+    const isTaproot = details.witness_type === 'taproot';
+    const swapAddress = isTaproot
+      ? details.swap_p2tr_address
+      : details.swap_p2sh_address;
     const swapAmount = App.format({tokens: details.swap_amount});
 
     const addr = `bitcoin:${swapAddress}?amount=${swapAmount}`;
@@ -865,7 +885,21 @@ App.submitCreateSwapQuote = function(event) {
 
     quote.data({payment_hash: details.payment_hash});
     quote.find('.chain-link').prop('href', addr);
-    quote.find('.redeem-script').val(details.redeem_script);
+    // Legacy exposes a single redeem_script textarea; for taproot we
+    // stash a JSON blob of the two tapscripts + control blocks so the
+    // refund tab still shows something machine-parseable. Real taproot
+    // refund UX is tracked separately.
+    quote.find('.redeem-script').val(
+      isTaproot
+        ? JSON.stringify({
+            claim_control_block: details.claim_control_block,
+            claim_script: details.claim_script,
+            output_script: details.output_script,
+            refund_control_block: details.refund_control_block,
+            refund_script: details.refund_script,
+          }, null, redeemInfoJsonSpacing)
+        : details.redeem_script,
+    );
     quote.find('.swap-address').val(swapAddress);
     quote.find('.swap-amount').val(swapAmount);
     quote.find('.timeout-block-height').val(details.timeout_block_height);
@@ -873,14 +907,32 @@ App.submitCreateSwapQuote = function(event) {
     quote.find('.save-redeem-script').click(e => {
       const anchor = document.createElement('a');
       const encoding = 'data:text/plain;charset=utf-8';
-      const text = JSON.stringify({
-        redeem_script: details.redeem_script,
-        refund_after: details.timeout_block_height,
-        swap_address: swapAddress,
-        swap_amount: swapAmount,
-        swap_private_key: App.invoice_refund_keypairs[invoice].private_key,
-        swap_quote_received_at: new Date().toISOString(),
-      }, null, redeemInfoJsonSpacing);
+      const savedPayload = isTaproot
+        ? {
+            claim_control_block: details.claim_control_block,
+            claim_script: details.claim_script,
+            output_script: details.output_script,
+            refund_after: details.timeout_block_height,
+            refund_control_block: details.refund_control_block,
+            refund_public_key: details.refund_public_key,
+            refund_script: details.refund_script,
+            swap_address: swapAddress,
+            swap_amount: swapAmount,
+            swap_private_key: App.invoice_refund_keypairs[invoice].private_key,
+            swap_quote_received_at: new Date().toISOString(),
+            witness_type: 'taproot',
+          }
+        : {
+            redeem_script: details.redeem_script,
+            refund_after: details.timeout_block_height,
+            swap_address: swapAddress,
+            swap_amount: swapAmount,
+            swap_private_key: App.invoice_refund_keypairs[invoice].private_key,
+            swap_quote_received_at: new Date().toISOString(),
+            witness_type: 'legacy',
+          };
+
+      const text = JSON.stringify(savedPayload, null, redeemInfoJsonSpacing);
 
       anchor.setAttribute('download', `details.swapaddress.redeem_script.txt`);
       anchor.setAttribute('href', `${encoding},${encodeURIComponent(text)}`);
@@ -907,10 +959,16 @@ App.submitCreateSwapQuote = function(event) {
 
     quote.collapse('show');
 
-    App.check_for_swap = setInterval(() => {
-      return App.checkSwap({quote, id: details.payment_hash});
-    },
-    App.check_for_swap_interval_ms);
+    // Taproot swap-status polling requires a separate API flow keyed by
+    // the P2TR output script (not the legacy redeem script). Until that
+    // lands, don't spin up the polling interval for taproot quotes —
+    // users still see the swap address + QR and can pay manually.
+    if (!isTaproot) {
+      App.check_for_swap = setInterval(() => {
+        return App.checkSwap({quote, id: details.payment_hash});
+      },
+      App.check_for_swap_interval_ms);
+    }
 
     return;
   });
