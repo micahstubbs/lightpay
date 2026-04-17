@@ -1,5 +1,4 @@
-const {createAddress} = require('ln-service');
-const {lightningDaemon} = require('ln-service');
+const {authenticatedLndGrpc, createChainAddress} = require('ln-service');
 
 const {OCW_LND_GRPC_HOST} = process.env;
 const {OCW_LND_MACAROON} = process.env;
@@ -15,13 +14,13 @@ const {OCW_LND_TLS_CERT} = process.env;
   }
 */
 module.exports = ({}, cbk) => {
-  const lnd = lightningDaemon({
+  const {lnd} = authenticatedLndGrpc({
     cert: OCW_LND_TLS_CERT,
-    host: OCW_LND_GRPC_HOST,
     macaroon: OCW_LND_MACAROON,
+    socket: OCW_LND_GRPC_HOST,
   });
 
-  return createAddress({lnd}, (err, res) => {
+  return createChainAddress({lnd, format: 'p2wpkh'}, (err, res) => {
     if (!!err) {
       return cbk([503, 'FailedToCreateAddress', err]);
     }
@@ -29,4 +28,3 @@ module.exports = ({}, cbk) => {
     return cbk(null, {chain_address: res.address});
   });
 };
-

@@ -16,7 +16,7 @@
     "ecpair": "^2.1.0",
     "express": "4.16.3",
     "helmet": "3.12.0",
-    "ln-service": "2.0.1",
+    "ln-service": "^58.0.3",
     "morgan": "1.9.0",
     "pug": "2.0.3",
     "pushdata-bitcoin": "1.0.1",

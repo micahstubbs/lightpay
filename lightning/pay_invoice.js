@@ -1,5 +1,4 @@
-const {lightningDaemon} = require('ln-service');
-const {payInvoice} = require('ln-service');
+const {authenticatedLndGrpc, payViaPaymentRequest} = require('ln-service');
 
 const {OCW_LND_GRPC_HOST} = process.env;
 const {OCW_LND_MACAROON} = process.env;
@@ -21,18 +20,17 @@ module.exports = ({invoice}, cbk) => {
     return cbk([400, 'ExpectedInvoice']);
   }
 
-  const lnd = lightningDaemon({
+  const {lnd} = authenticatedLndGrpc({
     cert: OCW_LND_TLS_CERT,
-    host: OCW_LND_GRPC_HOST,
     macaroon: OCW_LND_MACAROON,
+    socket: OCW_LND_GRPC_HOST,
   });
 
-  return payInvoice({invoice, lnd, wss: []}, (err, res) => {
+  return payViaPaymentRequest({lnd, request: invoice}, (err, res) => {
     if (!!err) {
       return cbk([503, 'FailedToPayInvoice', err]);
     }
 
-    return cbk(null, {payment_secret: res.payment_secret});
+    return cbk(null, {payment_secret: res.secret});
   });
 };
-
