@@ -597,6 +597,51 @@ App.getSwap = (args, cbk) => {
   return;
 };
 
+/** Detect a WebLN-compatible Lightning wallet in the browser.
+
+  If found, surface a small badge so users know they can use their
+  wallet to inspect invoices, and wire up a "Get invoice from wallet"
+  helper that calls webln.makeInvoice() and fills the invoice input.
+  No-op if window.webln is unavailable (most browsers).
+*/
+App.initWebLN = () => {
+  const webln = window.webln;
+
+  if (!webln) {
+    return;
+  }
+
+  const badge = $('<span class="badge badge-info ml-2 webln-badge">')
+    .text('WebLN wallet detected');
+
+  $('.create-swap-quote label').first().append(badge);
+
+  const invoiceInput = $('.pay-to-lightning-invoice');
+
+  const requestBtn = $('<button type="button" class="btn btn-sm btn-link webln-request">')
+    .text('Get invoice from wallet');
+
+  requestBtn.on('click', async () => {
+    try {
+      await webln.enable();
+
+      const amount = parseInt(window.prompt('Amount in sats?'), 10);
+
+      if (!amount || amount < 1) { return; }
+
+      const result = await webln.makeInvoice({amount});
+
+      if (!result || !result.paymentRequest) { return; }
+
+      invoiceInput.val(result.paymentRequest).trigger('keyup');
+    } catch (err) {
+      console.warn('WebLN makeInvoice failed:', err);
+    }
+  });
+
+  invoiceInput.closest('.form-group').append(requestBtn);
+};
+
 /** Init App
 */
 App.init = args => {
@@ -608,6 +653,8 @@ App.init = args => {
   $('.sign-with-refund-details').submit(App.submitSignWithRefundDetails);
   $('.refund-details-script').on(App.change_events, App.changedRefundScript);
   $('.select-currency').change(App.changedCurrencySelection);
+
+  App.initWebLN();
 
   return;
 };
