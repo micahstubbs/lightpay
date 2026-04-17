@@ -54,7 +54,6 @@ module.exports = (args, cbk) => {
     // Chain sync is started. Alice will get block rewards for use in deposit
     spawnChainDaemon: ['generateAliceKeyPair', (res, cbk) => {
       return spawnChainDaemon({
-        network,
         mining_public_key: res.generateAliceKeyPair.public_key,
       },
       cbk);
@@ -86,11 +85,12 @@ module.exports = (args, cbk) => {
     }],
 
     // A bunch of blocks are made so Alice's rewards are mature
-    generateToMaturity: ['spawnChainDaemon', (_, cbk) => {
+    generateToMaturity: ['spawnChainDaemon', ({spawnChainDaemon}, cbk) => {
       return generateChainBlocks({
         network,
         blocks_count: chain.maturity_block_count,
         delay: generateDelayMs,
+        mining_address: spawnChainDaemon.mining_address,
       },
       cbk);
     }],
@@ -166,8 +166,13 @@ module.exports = (args, cbk) => {
     }],
 
     // The swap funding transaction is mined
-    mineFundingTx: ['fundSwapAddress', ({fundSwapAddress}, cbk) => {
+    mineFundingTx: [
+      'fundSwapAddress',
+      'spawnChainDaemon',
+      ({fundSwapAddress, spawnChainDaemon}, cbk) =>
+    {
       return mineTransaction({
+        mining_address: spawnChainDaemon.mining_address,
         network,
         transaction: fundSwapAddress.transaction,
       },
@@ -237,10 +242,15 @@ module.exports = (args, cbk) => {
     }],
 
     // Bob never gets the preimage and claims his funds. Many blocks go by
-    generateTimeoutBlocks: ['mineFundingTx', (_, cbk) => {
+    generateTimeoutBlocks: [
+      'mineFundingTx',
+      'spawnChainDaemon',
+      ({spawnChainDaemon}, cbk) =>
+    {
       return generateChainBlocks({
         network,
         blocks_count: swapTimeoutBlocks,
+        mining_address: spawnChainDaemon.mining_address,
       },
       cbk);
     }],
@@ -277,8 +287,13 @@ module.exports = (args, cbk) => {
     }],
 
     // Mine the sweep transaction into a block
-    mineSweepTransaction: ['sweepTransaction', ({sweepTransaction}, cbk) => {
+    mineSweepTransaction: [
+      'sweepTransaction',
+      'spawnChainDaemon',
+      ({spawnChainDaemon, sweepTransaction}, cbk) =>
+    {
       return mineTransaction({
+        mining_address: spawnChainDaemon.mining_address,
         network,
         transaction: sweepTransaction.transaction,
       },

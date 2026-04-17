@@ -6,15 +6,17 @@ const chainRpc = require('./chain_rpc');
 const getBlockDetails = require('./get_block_details');
 const {returnResult} = require('./../async-util');
 
-const {generate} = require('./conf/rpc_commands');
+const {generateToAddress} = require('./conf/rpc_commands');
 
 const noDelay = 0;
+const blocksPerCall = 1;
 
-/** Generate blocks on the chain
+/** Generate blocks on the chain (Bitcoin Core regtest)
 
   {
     [blocks_count]: <Number of Blocks to Generate Number>
     [delay]: <Delay Between Blocks Ms> = 0
+    mining_address: <Address to Mine To String>
     network: <Network Name String>
   }
 
@@ -31,14 +33,17 @@ const noDelay = 0;
   }
 */
 module.exports = (args, cbk) => {
+  if (!args.mining_address) {
+    return cbk([400, 'ExpectedMiningAddress']);
+  }
+
   return asyncAuto({
-    // Make blocks to maturity
     generateBlocks: cbk => {
       return asyncTimesSeries(args.blocks_count, (_, cbk) => {
         return chainRpc({
-          cmd: generate,
+          cmd: generateToAddress,
           network: args.network,
-          params: [[args.delay].length],
+          params: [blocksPerCall, args.mining_address],
         },
         (err, blockHashes) => {
           if (!!err) {
@@ -53,7 +58,6 @@ module.exports = (args, cbk) => {
       cbk);
     },
 
-    // Grab the full details of each blocks, including transaction info
     blocks: ['generateBlocks', ({generateBlocks}, cbk) => {
       return asyncMapSeries(generateBlocks, (blockHash, cbk) => {
         return getBlockDetails({
@@ -65,9 +69,7 @@ module.exports = (args, cbk) => {
       cbk);
     }],
 
-    // Final blocks
     blockDetails: ['blocks', ({blocks}, cbk) => cbk(null, {blocks})],
   },
   returnResult({of: 'blockDetails'}, cbk));
 };
-

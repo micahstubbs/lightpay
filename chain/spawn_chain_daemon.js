@@ -1,69 +1,102 @@
-const {ECPair} = require('bitcoinjs-lib');
-const {networks} = require('bitcoinjs-lib');
-const removeDir = require('rimraf');
+const {mkdtempSync, rmSync} = require('fs');
+const {networks, payments} = require('bitcoinjs-lib');
+const os = require('os');
+const path = require('path');
 const {spawn} = require('child_process');
-const uuidv4 = require('uuid/v4');
 
 const chainServer = require('./conf/chain_server');
 const errCode = require('./conf/error_codes');
 
-const rpcServerReady = /RPC.server.listening/;
-const unableToStartServer = /Unable.to.start.server/;
+const rpcServerReady = /Bound to.*127\.0\.0\.1|init message: Done loading/;
+const alreadyRunning = /Cannot obtain a lock on data directory/;
 
-/** Spawn a chain daemon for testing on regtest
+const defaultDaemonBinary = 'bitcoind';
+const daemonBinary = process.env.OCW_CHAIN_DAEMON_BIN || defaultDaemonBinary;
 
-  This method will also listen for uncaught exceptions and stop the daemon
-  before the process dies.
+/** Spawn a Bitcoin Core regtest daemon for integration tests.
+
+  Derives a P2WPKH mining address from the given public key and exposes
+  it on the resolved daemon object so callers can mine to it later via
+  `generatetoaddress`. The daemon's lifecycle is tied to this process;
+  any uncaught exception kills it before exit.
+
+  Requires `bitcoind` on PATH (override with OCW_CHAIN_DAEMON_BIN).
 
   {
-    mining_public_key: <Mining Public Key String>
+    mining_public_key: <Mining Public Key Hex String>
+  }
+
+  @returns via cbk
+  {
+    daemon: <Spawned ChildProcess>
+    datadir: <Temporary Data Directory String>
+    mining_address: <P2WPKH Mining Address String>
   }
 */
 module.exports = (args, cbk) => {
+  if (!args.mining_public_key) {
+    return cbk([errCode.local_err, 'ExpectedMiningPublicKey']);
+  }
+
   const miningKey = Buffer.from(args.mining_public_key, 'hex');
-  const rpcHost = chainServer.regtest.rpc_host;
-  const rpcPass = chainServer.regtest.rpc_pass;
-  const rpcPort = chainServer.regtest.rpc_port;
-  const rpcUser = chainServer.regtest.rpc_user;
-  const tmpDir = `/tmp/${uuidv4()}`;
 
-  const keyPair = ECPair.fromPublicKeyBuffer(miningKey, networks.testnet);
-
-  const daemon = spawn('btcd', [
-    '--datadir', tmpDir,
-    '--logdir', tmpDir,
-    '--miningaddr', keyPair.getAddress(),
-    '--notls',
-    '--regtest',
-    '--relaynonstd',
-    '--rpclisten', `${rpcHost}:${rpcPort}`,
-    '--rpcpass', rpcPass,
-    '--rpcuser', rpcUser,
-    '--txindex',
-  ]);
-
-  daemon.stderr.on('data', data => console.log(`${data}`));
-
-  daemon.stdout.on('data', data => {
-    if (unableToStartServer.test(`${data}`)) {
-      return cbk([errCode.local_err, 'SpawnDaemonFailure']);
-    }
-
-    if (rpcServerReady.test(`${data}`)) {
-      return cbk();
-    }
-
-    return;
+  const {address: miningAddress} = payments.p2wpkh({
+    pubkey: miningKey,
+    network: networks.regtest,
   });
 
-  daemon.on('close', code => removeDir(tmpDir, () => {}));
+  const datadir = mkdtempSync(path.join(os.tmpdir(), 'lightpay-regtest-'));
+
+  const {rpc_host, rpc_port, rpc_user, rpc_pass} = chainServer.regtest;
+
+  const daemon = spawn(daemonBinary, [
+    '-regtest',
+    `-datadir=${datadir}`,
+    '-server=1',
+    '-txindex=1',
+    '-fallbackfee=0.0002',
+    `-rpcbind=${rpc_host}`,
+    `-rpcallowip=${rpc_host}`,
+    `-rpcport=${rpc_port}`,
+    `-rpcuser=${rpc_user}`,
+    `-rpcpassword=${rpc_pass}`,
+    '-printtoconsole',
+  ]);
+
+  let settled = false;
+  const resolve = (err, res) => {
+    if (settled) { return; }
+    settled = true;
+    return cbk(err, res);
+  };
+
+  daemon.stderr.on('data', data => console.log(`bitcoind[err]: ${data}`));
+
+  daemon.stdout.on('data', data => {
+    const text = `${data}`;
+
+    if (alreadyRunning.test(text)) {
+      return resolve([errCode.local_err, 'ChainDaemonAlreadyRunning']);
+    }
+
+    if (rpcServerReady.test(text)) {
+      return resolve(null, {daemon, datadir, mining_address: miningAddress});
+    }
+  });
+
+  daemon.on('error', err => {
+    return resolve([errCode.local_err, 'SpawnDaemonFailure', err]);
+  });
+
+  daemon.on('close', () => {
+    try { rmSync(datadir, {force: true, recursive: true}); } catch (e) {}
+  });
 
   process.on('uncaughtException', err => {
     console.log(err);
     daemon.kill();
-    process.exit(1)
+    process.exit(1);
   });
 
   return;
 };
-

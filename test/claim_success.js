@@ -76,17 +76,17 @@ module.exports = (args, cbk) => {
     // We'll bring up a fake chain for this test, with Bob getting the rewards
     spawnChainDaemon: ['generateBobKeyPair', ({generateBobKeyPair}, cbk) => {
       return spawnChainDaemon({
-        network,
         mining_public_key: generateBobKeyPair.public_key,
       },
       cbk);
     }],
 
     // The chain needs to progress to maturity for Bob to spend his rewards
-    generateToMaturity: ['spawnChainDaemon', (_, cbk) => {
+    generateToMaturity: ['spawnChainDaemon', ({spawnChainDaemon}, cbk) => {
       return generateChainBlocks({
         network,
         blocks_count: maturityBlockCount,
+        mining_address: spawnChainDaemon.mining_address,
       },
       cbk);
     }],
@@ -146,8 +146,13 @@ module.exports = (args, cbk) => {
     }],
 
     // The chain progresses and confirms the swap funding
-    mineFundingTx: ['fundSwapAddress', ({fundSwapAddress}, cbk) => {
+    mineFundingTx: [
+      'fundSwapAddress',
+      'spawnChainDaemon',
+      ({fundSwapAddress, spawnChainDaemon}, cbk) =>
+    {
       return mineTransaction({
+        mining_address: spawnChainDaemon.mining_address,
         network,
         transaction: fundSwapAddress.transaction,
       },
@@ -307,8 +312,13 @@ module.exports = (args, cbk) => {
     }],
 
     // Alice's rewarded coins are confirmed back to an address she controls
-    mineClaimTransaction: ['claimTransaction', ({claimTransaction}, cbk) => {
+    mineClaimTransaction: [
+      'claimTransaction',
+      'spawnChainDaemon',
+      ({claimTransaction, spawnChainDaemon}, cbk) =>
+    {
       return mineTransaction({
+        mining_address: spawnChainDaemon.mining_address,
         network,
         transaction: claimTransaction.transaction,
       },
