@@ -1,5 +1,3 @@
-const chainRpc = require('node-bitcoin-rpc');
-
 const chainServer = require('./conf/chain_server');
 const errCode = require('./conf/error_codes');
 
@@ -10,7 +8,7 @@ const credentials = {
   },
   pass: {
     regtest: chainServer.regtest.rpc_pass,
-    testnet: process.env.OCW_CHAIN_RPC_PASS
+    testnet: process.env.OCW_CHAIN_RPC_PASS,
   },
   port: {
     regtest: chainServer.regtest.rpc_port,
@@ -21,6 +19,8 @@ const credentials = {
     testnet: chainServer.testnet.rpc_user,
   },
 };
+
+let requestId = 0;
 
 /** Execute Chain RPC command
 
@@ -43,21 +43,54 @@ module.exports = ({cmd, network, params}, cbk) => {
   const port = credentials.port[network];
   const user = credentials.user[network];
 
-  chainRpc.init(host, port, user, pass);
+  if (!host || !port || !user) {
+    return cbk([errCode.local_err, 'MissingChainRpcCredentials', {network}]);
+  }
 
-  // Should the params be a single argument instead of array, array-ize it.
   const niceParams = !Array.isArray(params || []) ? [params] : params || [];
+  const auth = Buffer.from(`${user}:${pass || ''}`).toString('base64');
+  const url = `http://${host}:${port}/`;
 
-  return chainRpc.call(cmd, niceParams, (err, response) => {
-    if (!!err) {
-      return cbk([errCode.service_unavailable, 'ChainDaemonError', err]);
+  const body = JSON.stringify({
+    jsonrpc: '1.0',
+    id: `lightpay-${++requestId}`,
+    method: cmd,
+    params: niceParams,
+  });
+
+  return fetch(url, {
+    body,
+    headers: {
+      Authorization: `Basic ${auth}`,
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+  })
+  .then(async res => {
+    const text = await res.text();
+
+    let payload;
+    try {
+      payload = JSON.parse(text);
+    } catch (parseErr) {
+      // Bitcoin Core returns plain-text bodies on auth/HTTP errors.
+      return cbk([errCode.service_unavailable, 'ChainDaemonError', {
+        detail: text,
+        status: res.status,
+      }]);
     }
 
-    if (!response) {
+    if (payload && payload.error) {
+      return cbk([errCode.service_unavailable, 'ChainDaemonError', payload.error]);
+    }
+
+    if (!payload || payload.result === undefined) {
       return cbk([errCode.service_unavailable, 'BadChainResponse']);
     }
 
-    return cbk(null, response.result);
+    return cbk(null, payload.result);
+  })
+  .catch(err => {
+    return cbk([errCode.service_unavailable, 'ChainDaemonError', err]);
   });
 };
-
