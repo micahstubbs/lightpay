@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "target": "es2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "skipLibCheck": true,
+    "lib": ["es2022"],
+    "types": ["node"]
+  },
+  "include": [
+    "async-util/**/*.js",
+    "chain/**/*.js",
+    "lightning/**/*.js",
+    "routers/**/*.js",
+    "scripts/**/*.js",
+    "service/**/*.js",
+    "swaps/**/*.js",
+    "server.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "public/js/blockchain.js",
+    "public/js/blockchain.js.map",
+    ".tap"
+  ]
+}

@@ -1,3 +1,4 @@
+// @ts-check
 const validNetworks = ['mainnet', 'regtest', 'testnet'];
 
 const defaultNetwork = 'testnet';

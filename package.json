@@ -24,12 +24,14 @@
   },
   "description": "Tools for swaps with Lightning",
   "devDependencies": {
+    "@types/node": "^22.19.17",
     "esbuild": "^0.25.12",
     "esbuild-plugin-polyfill-node": "^0.3.0",
     "ora": "2.0.0",
     "prompt": "1.0.0",
     "rimraf": "2.6.2",
-    "tap": "^21.7.0"
+    "tap": "^21.7.0",
+    "typescript": "^5.9.3"
   },
   "directories": {
     "doc": "docs",
@@ -46,7 +48,8 @@
     "build": "node scripts/build-bundle.js",
     "prestart": "npm run build",
     "start": "node server.js",
-    "test": "tap test/*.js"
+    "test": "tap test/*.js",
+    "typecheck": "tsc --project jsconfig.json"
   },
   "version": "1.0.0"
 }
