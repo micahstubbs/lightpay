@@ -1,0 +1,43 @@
+services:
+  lightpay:
+    build: .
+    image: lightpay:local
+    container_name: lightpay
+    ports:
+      - "9889:9889"
+    environment:
+      NODE_ENV: production
+      OCW_NETWORK: ${OCW_NETWORK:-regtest}
+      OCW_CHAIN_RPC_PASS: ${OCW_CHAIN_RPC_PASS:-pass}
+      OCW_CLAIM_BIP39_SEED: ${OCW_CLAIM_BIP39_SEED}
+      OCW_LND_GRPC_HOST: ${OCW_LND_GRPC_HOST:-}
+      OCW_LND_MACAROON: ${OCW_LND_MACAROON:-}
+      OCW_LND_TLS_CERT: ${OCW_LND_TLS_CERT:-}
+    depends_on:
+      - bitcoind
+    restart: unless-stopped
+
+  # Bitcoin Core regtest for local dev / integration tests.
+  # Wire the RPC credentials here to match chain/conf/chain_server.json.
+  bitcoind:
+    image: lncm/bitcoind:v28.0
+    container_name: lightpay-bitcoind
+    command:
+      - -regtest
+      - -server=1
+      - -txindex=1
+      - -fallbackfee=0.0002
+      - -rpcbind=0.0.0.0
+      - -rpcallowip=0.0.0.0/0
+      - -rpcport=18335
+      - -rpcuser=user
+      - -rpcpassword=pass
+      - -printtoconsole
+    ports:
+      - "18335:18335"
+    volumes:
+      - bitcoind-data:/data/.bitcoin
+    restart: unless-stopped
+
+volumes:
+  bitcoind-data:

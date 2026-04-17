@@ -1,0 +1,16 @@
+.git
+.gitignore
+.beads
+.bv
+.tap
+.claude
+.github
+node_modules
+npm-debug.log
+docs
+test
+docker-compose.yml
+Dockerfile
+public/js/blockchain.js
+public/js/blockchain.js.map
+*.md
