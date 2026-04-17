@@ -8,3 +8,6 @@ node_modules
 # esbuild-generated browser bundle
 public/js/blockchain.js
 public/js/blockchain.js.map
+
+# tap 21 coverage and test result cache
+.tap/
