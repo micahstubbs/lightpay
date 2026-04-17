@@ -1,0 +1,44 @@
+TAP version 14
+Error: SpawnDaemonFailure
+    at /home/m/wk/lightpay/test/claim_success.js:336:15
+    at /home/m/wk/lightpay/chain/chain_rpc.js:92:12
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+# Subtest: perform swap with pkhash
+    not ok 1 - test unfinished
+      ---
+      at:
+        fileName: test/claim_success.js
+        lineNumber: 332
+        columnNumber: 1
+        typeName: Object
+      stack: |
+        Object.<anonymous> (test/claim_success.js:332:1)
+      test: perform swap with pkhash
+      source: |
+      
+        // Make sure that we can swap with a pkhash
+        test('perform swap with pkhash', t => {
+        ^
+          return module.exports({is_refund_to_public_key_hash: true}, testErr => {
+            return stopChainDaemon({network}, stopErr => {
+      ...
+    
+    1..1
+not ok 1 - perform swap with pkhash # time=34.298ms
+  ---
+  at:
+    fileName: test/claim_success.js
+    lineNumber: 332
+    columnNumber: 1
+    typeName: Object
+  source: |
+  
+    // Make sure that we can swap with a pkhash
+    test('perform swap with pkhash', t => {
+    ^
+      return module.exports({is_refund_to_public_key_hash: true}, testErr => {
+        return stopChainDaemon({network}, stopErr => {
+  ...
+
+not ok 2 - child test left in queue: perform swap with public key refund
+1..2

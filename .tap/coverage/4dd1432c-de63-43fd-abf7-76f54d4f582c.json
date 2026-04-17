@@ -1,0 +1,38 @@
+{
+  "result": [
+    {
+      "scriptId": "748",
+      "url": "file:///home/m/wk/lightpay/service/network.js",
+      "functions": [
+        {
+          "functionName": "",
+          "ranges": [
+            {
+              "startOffset": 0,
+              "endOffset": 274,
+              "count": 6
+            },
+            {
+              "startOffset": 134,
+              "endOffset": 151,
+              "count": 1
+            },
+            {
+              "startOffset": 193,
+              "endOffset": 245,
+              "count": 1
+            },
+            {
+              "startOffset": 245,
+              "endOffset": 273,
+              "count": 5
+            }
+          ],
+          "isBlockCoverage": true
+        }
+      ]
+    }
+  ],
+  "timestamp": 560592.405488,
+  "source-map-cache": {}
+}

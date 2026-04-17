@@ -1,0 +1,6 @@
+TAP version 14
+ok 1 - Creates refund tx
+ok 2 - should be equal
+ok 3 - should be equal
+ok 4 - expected to throw
+1..4
