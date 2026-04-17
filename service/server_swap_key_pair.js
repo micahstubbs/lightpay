@@ -1,19 +1,12 @@
-const {generateMnemonic, mnemonicToSeed, validateMnemonic} = require('bip39');
+const {mnemonicToSeed, validateMnemonic} = require('bip39');
 const {networks} = require('bitcoinjs-lib');
 const {BIP32Factory} = require('bip32');
 const ecc = require('tiny-secp256k1');
 
 const bip32 = BIP32Factory(ecc);
 
-const {OCW_CLAIM_BIP39_SEED} = process.env;
-
 const minIndex = 0;
 const maxIndex = 4294967295;
-
-if (!validateMnemonic(OCW_CLAIM_BIP39_SEED)) {
-  console.log([500, 'ExpectedValidMnemonic', generateMnemonic()]);
-  process.exit();
-}
 
 /** Server swap key pair
 
@@ -23,7 +16,7 @@ if (!validateMnemonic(OCW_CLAIM_BIP39_SEED)) {
   }
 
   @throws
-  <Error> on invalid index or network
+  <Error> on invalid index, network, or missing/invalid OCW_CLAIM_BIP39_SEED
 
   @returns
   {
@@ -38,6 +31,12 @@ module.exports = ({index, network}) => {
 
   if (!network || !networks[network]) {
     throw new Error('ExpectedValidNetwork');
+  }
+
+  const {OCW_CLAIM_BIP39_SEED} = process.env;
+
+  if (!validateMnemonic(OCW_CLAIM_BIP39_SEED || '')) {
+    throw new Error('ExpectedValidMnemonic');
   }
 
   const seed = mnemonicToSeed(OCW_CLAIM_BIP39_SEED);
