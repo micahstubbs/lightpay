@@ -1,4 +1,4 @@
-const {mnemonicToSeed, validateMnemonic} = require('bip39');
+const {mnemonicToSeedSync, validateMnemonic} = require('bip39');
 const {networks} = require('bitcoinjs-lib');
 const {BIP32Factory} = require('bip32');
 const ecc = require('tiny-secp256k1');
@@ -39,7 +39,7 @@ module.exports = ({index, network}) => {
     throw new Error('ExpectedValidMnemonic');
   }
 
-  const seed = mnemonicToSeed(OCW_CLAIM_BIP39_SEED);
+  const seed = mnemonicToSeedSync(OCW_CLAIM_BIP39_SEED);
 
   const root = bip32.fromSeed(seed, networks[network]);
 
