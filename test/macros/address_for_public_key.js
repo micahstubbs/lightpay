@@ -1,7 +1,4 @@
-const {address} = require('bitcoinjs-lib');
-const {crypto} = require('bitcoinjs-lib');
-const {networks} = require('bitcoinjs-lib');
-const {script} = require('bitcoinjs-lib');
+const {crypto, networks, payments} = require('bitcoinjs-lib');
 
 const knownNetworks = ['regtest', 'testnet'];
 const notFound = -1;
@@ -26,12 +23,7 @@ module.exports = (args, cbk) => {
   const network = networks.testnet;
   const publicKey = Buffer.from(args.public_key, 'hex');
 
-  const hash = crypto.hash160(publicKey);
+  const {address} = payments.p2wpkh({pubkey: publicKey, network});
 
-  const scriptPub = script.witnessPubKeyHash.output.encode(hash);
-
-  const p2wpkhAddress = address.fromOutputScript(scriptPub, network);
-
-  return cbk(null, {p2wpkh_address: p2wpkhAddress});
+  return cbk(null, {p2wpkh_address: address});
 };
-

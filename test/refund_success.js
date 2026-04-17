@@ -45,11 +45,10 @@ module.exports = (args, cbk) => {
   return asyncAuto({
     // Alice generates a keypair for her refund output.
     generateAliceKeyPair: cbk => {
-      try {
-        return cbk(null, generateKeyPair({network}));
-      } catch (e) {
-        return cbk([0, 'ExpectedGeneratedKeyPair', e]);
-      }
+      let keyPair;
+      try { keyPair = generateKeyPair({network}); }
+      catch (e) { return cbk([0, 'ExpectedGeneratedKeyPair', e]); }
+      return cbk(null, keyPair);
     },
 
     // Chain sync is started. Alice will get block rewards for use in deposit
@@ -63,11 +62,10 @@ module.exports = (args, cbk) => {
 
     // Bob generates a keypair for his claim output
     generateBobKeyPair: cbk => {
-      try {
-        return cbk(null, generateKeyPair({network}));
-      } catch (e) {
-        return cbk([0, 'ExpectedGeneratedKeyPair', e]);
-      }
+      let keyPair;
+      try { keyPair = generateKeyPair({network}); }
+      catch (e) { return cbk([0, 'ExpectedGeneratedKeyPair', e]); }
+      return cbk(null, keyPair);
     },
 
     // Alice generates a Lightning invoice which gives a preimage/hash
@@ -120,17 +118,19 @@ module.exports = (args, cbk) => {
       const refundPkHash = !isPkHash ? null : res.generateAliceKeyPair.pk_hash;
       const refundPk = !isPkHash ? res.generateAliceKeyPair.public_key : null;
 
+      let addr;
       try {
-        return cbk(null, swapAddress({
+        addr = swapAddress({
           destination_public_key: res.generateBobKeyPair.public_key,
           payment_hash: res.generatePaymentPreimage.payment_hash,
           refund_public_key: refundPk,
           refund_public_key_hash: refundPkHash,
           timeout_block_height: res.swapRefundHeight,
-        }));
+        });
       } catch (e) {
         return cbk([0, 'ExpectedChainSwapAddr', e]);
       }
+      return cbk(null, addr);
     }],
 
     // Alice selects a UTXO to send to the swap address
@@ -185,14 +185,16 @@ module.exports = (args, cbk) => {
       'fundSwapAddress',
       ({createChainSwapAddress, fundSwapAddress}, cbk) =>
     {
+      let utxos;
       try {
-        return cbk(null, swapScriptInTransaction({
+        utxos = swapScriptInTransaction({
           redeem_script: createChainSwapAddress.redeem_script,
           transaction: fundSwapAddress.transaction,
-        }));
+        });
       } catch (e) {
         return cbk([0, e.message, e]);
       }
+      return cbk(null, utxos);
     }],
 
     // Alice makes a transaction to claim her refund too early
@@ -203,18 +205,20 @@ module.exports = (args, cbk) => {
       'getHeightAfterFunding',
       (res, cbk) =>
     {
+      let tx;
       try {
-        return cbk(null, refundTransaction({
+        tx = refundTransaction({
           destination: res.createAliceAddress.p2wpkh_address,
           fee_tokens_per_vbyte: staticFeePerVirtualByte,
           is_public_key_hash_refund: args.is_refund_to_public_key_hash,
           private_key: res.generateAliceKeyPair.private_key,
           timelock_block_height: res.getHeightAfterFunding.current_height,
           utxos: res.fundingTransactionUtxos.matching_outputs,
-        }));
+        });
       } catch (e) {
         return cbk([0, 'ExpectedRefundTx', e]);
       }
+      return cbk(null, tx);
     }],
 
     // Alice tries to claim her refund right away but hits `refund_too_early`
@@ -256,18 +260,20 @@ module.exports = (args, cbk) => {
       'mineFundingTx',
       (res, cbk) =>
     {
+      let tx;
       try {
-        cbk(null, refundTransaction({
+        tx = refundTransaction({
           destination: res.createAliceAddress.p2wpkh_address,
           fee_tokens_per_vbyte: staticFeePerVirtualByte,
           is_public_key_hash_refund: args.is_refund_to_public_key_hash,
           private_key: res.generateAliceKeyPair.private_key,
           timelock_block_height: res.getHeightForRefund.current_height,
           utxos: res.fundingTransactionUtxos.matching_outputs,
-        }));
+        });
       } catch (e) {
         return cbk([0, 'ExpectedRefundTx', e]);
       }
+      return cbk(null, tx);
     }],
 
     // Mine the sweep transaction into a block
