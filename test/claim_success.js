@@ -1,6 +1,6 @@
 const asyncAuto = require('async/auto');
 const asyncConstant = require('async/constant');
-const {test} = require('tap');
+
 
 const macros = './macros/';
 
@@ -106,6 +106,7 @@ module.exports = (args, cbk) => {
       let addr;
       try {
         addr = swapAddress({
+          network,
           destination_public_key: res.generateAliceKeyPair.public_key,
           payment_hash: res.generatePaymentPreimage.payment_hash,
           refund_public_key: refundPk,
@@ -232,6 +233,7 @@ module.exports = (args, cbk) => {
       let tx;
       try {
         tx = claimTransaction({
+          network,
           current_block_height: readyToClaim.current_block_height,
           destination: readyToClaim.destination,
           fee_tokens_per_vbyte: readyToClaim.fee_tokens_per_vbyte,
@@ -265,6 +267,7 @@ module.exports = (args, cbk) => {
       let tx;
       try {
         tx = claimTransaction({
+          network,
           current_block_height: res.readyToClaim.current_block_height,
           destination: res.readyToClaim.destination,
           fee_tokens_per_vbyte: res.readyToClaim.fee_tokens_per_vbyte,
@@ -298,6 +301,7 @@ module.exports = (args, cbk) => {
       let tx;
       try {
         tx = claimTransaction({
+          network,
           current_block_height: readyToClaim.current_block_height,
           destination: readyToClaim.destination,
           fee_tokens_per_vbyte: readyToClaim.fee_tokens_per_vbyte,
@@ -328,29 +332,26 @@ module.exports = (args, cbk) => {
   returnResult({}, cbk));
 };
 
-// Make sure that we can swap with a pkhash
-test('perform swap with pkhash', t => {
-  return module.exports({is_refund_to_public_key_hash: true}, testErr => {
-    return stopChainDaemon({network}, stopErr => {
-      if (!!stopErr || !!testErr) {
-        throw new Error(testErr[1] || stopErr[1]);
-      }
+const {test} = require('tap');
 
-      return t.end();
-    });
-  });
+test('perform swap with pkhash', async t => {
+  t.setTimeout(500000);
+  try {
+    await new Promise((resolve, reject) => module.exports({is_refund_to_public_key_hash: true}, err => err ? reject(new Error('TestError:' + JSON.stringify(err, (k,v) => v?.message||v).slice(0, 300))) : resolve()));
+    await new Promise((resolve, reject) => stopChainDaemon({network}, err => err ? reject(new Error('StopError:' + JSON.stringify(err))) : resolve()));
+    t.pass('swap with pkhash completed');
+  } catch (err) {
+    t.fail(err && err.message ? err.message : String(err));
+  }
 });
 
-// Make sure that we can swap with a public key
-test('perform swap with public key refund', t => {
-  return module.exports({}, testErr => {
-    return stopChainDaemon({network}, stopErr => {
-      if (!!stopErr || !!testErr) {
-        throw new Error(testErr[1] || stopErr[1]);
-      }
-
-      return t.end();
-    });
-  });
+test('perform swap with public key refund', async t => {
+  t.setTimeout(500000);
+  try {
+    await new Promise((resolve, reject) => module.exports({}, err => err ? reject(new Error('TestError:' + JSON.stringify(err, (k,v) => v?.message||v).slice(0, 300))) : resolve()));
+    await new Promise((resolve, reject) => stopChainDaemon({network}, err => err ? reject(new Error('StopError:' + JSON.stringify(err))) : resolve()));
+    t.pass('swap with public key completed');
+  } catch (err) {
+    t.fail(err && err.message ? err.message : String(err));
+  }
 });
-

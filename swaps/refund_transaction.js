@@ -12,8 +12,12 @@ const swapScriptDetails = require('./swap_script_details');
 const ECPair = ECPairFactory(ecc);
 const {SIGHASH_ALL} = Transaction;
 const {sha256} = crypto;
-const {testnet} = networks;
 const {toOutputScript} = address;
+
+const networkForName = name => {
+  if (!name) { return networks.testnet; }
+  return networks[name === 'mainnet' ? 'bitcoin' : name] || networks.testnet;
+};
 
 const compressedPubKeySize = chain.compressed_public_key_size;
 const dustRatio = 1 / 3;
@@ -77,7 +81,8 @@ module.exports = args => {
   const tokensPerVirtualByte = args.fee_tokens_per_vbyte;
   const tx = new Transaction();
 
-  tx.addOutput(toOutputScript(args.destination, testnet), tokens);
+  const network = networkForName(args.network);
+  tx.addOutput(toOutputScript(args.destination, network), tokens);
 
   // Plug all the utxos into the transaction as inputs
   args.utxos
@@ -119,7 +124,7 @@ module.exports = args => {
 
   // The public key buffer is stubbed all zeros when there is no private key
   if (!!args.private_key) {
-    pubKey = ECPair.fromWIF(args.private_key, testnet).publicKey;
+    pubKey = ECPair.fromWIF(args.private_key, [networks.bitcoin, networks.testnet, networks.regtest]).publicKey;
   } else {
     pubKey = Buffer.alloc(compressedPubKeySize);
   }
@@ -202,7 +207,7 @@ module.exports = args => {
     return {transaction: tx.toHex()};
   }
 
-  const signingKey = ECPair.fromWIF(args.private_key, testnet);
+  const signingKey = ECPair.fromWIF(args.private_key, [networks.bitcoin, networks.testnet, networks.regtest]);
 
   // Set legacy p2sh signatures
   args.utxos.forEach(({redeem, script}, i) => {

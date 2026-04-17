@@ -121,6 +121,7 @@ module.exports = (args, cbk) => {
       let addr;
       try {
         addr = swapAddress({
+          network,
           destination_public_key: res.generateBobKeyPair.public_key,
           payment_hash: res.generatePaymentPreimage.payment_hash,
           refund_public_key: refundPk,
@@ -213,6 +214,7 @@ module.exports = (args, cbk) => {
       let tx;
       try {
         tx = refundTransaction({
+          network,
           destination: res.createAliceAddress.p2wpkh_address,
           fee_tokens_per_vbyte: staticFeePerVirtualByte,
           is_public_key_hash_refund: args.is_refund_to_public_key_hash,
@@ -273,6 +275,7 @@ module.exports = (args, cbk) => {
       let tx;
       try {
         tx = refundTransaction({
+          network,
           destination: res.createAliceAddress.p2wpkh_address,
           fee_tokens_per_vbyte: staticFeePerVirtualByte,
           is_public_key_hash_refund: args.is_refund_to_public_key_hash,
@@ -303,27 +306,37 @@ module.exports = (args, cbk) => {
   returnResult({}, cbk));
 };
 
-test('perform swap and refund with a pkhash', t => {
-  return module.exports({is_refund_to_public_key_hash: true}, testErr => {
-    return stopChainDaemon({network}, stopErr => {
-      if (!!stopErr || !!testErr) {
-        throw new Error(testErr[1] || stopErr[1]);
+const runRefund = args => new Promise((resolve, reject) => {
+  module.exports(args, testErr => {
+    stopChainDaemon({network}, stopErr => {
+      if (!!testErr) {
+        return reject(new Error('TestError:' + JSON.stringify(testErr).slice(0, 200)));
       }
-
-      return t.end();
+      if (!!stopErr) {
+        return reject(new Error('StopError:' + JSON.stringify(stopErr).slice(0, 200)));
+      }
+      return resolve();
     });
   });
 });
 
-test('perform swap and refund with refund key', t => {
-  return module.exports({}, testErr => {
-    return stopChainDaemon({network}, stopErr => {
-      if (!!stopErr || !!testErr) {
-        throw new Error(testErr[1] || stopErr[1]);
-      }
+test('perform swap and refund with a pkhash', async t => {
+  t.setTimeout(500000);
+  try {
+    await runRefund({is_refund_to_public_key_hash: true});
+    t.pass('refund with pkhash completed');
+  } catch (err) {
+    t.fail(err && err.message ? err.message : String(err));
+  }
+});
 
-      return t.end();
-    });
-  });
+test('perform swap and refund with refund key', async t => {
+  t.setTimeout(500000);
+  try {
+    await runRefund({});
+    t.pass('refund with refund key completed');
+  } catch (err) {
+    t.fail(err && err.message ? err.message : String(err));
+  }
 });
 

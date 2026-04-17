@@ -56,39 +56,52 @@ module.exports = ({cmd, network, params}, cbk) => {
     params: niceParams,
   });
 
-  return fetch(url, {
-    body,
-    headers: {
-      Authorization: `Basic ${auth}`,
-      'Content-Type': 'application/json',
-    },
-    method: 'POST',
-  })
-  .then(async res => {
+  // Settle the promise to a result tuple, THEN call cbk. Calling cbk from
+  // inside .then would trigger async/auto synchronous chaining, which can
+  // throw from downstream tasks; those throws would land in a .catch and
+  // call cbk a second time. Separating the phases avoids that.
+  const run = async () => {
+    let res;
+    try {
+      res = await fetch(url, {
+        body,
+        headers: {
+          Authorization: `Basic ${auth}`,
+          'Content-Type': 'application/json',
+        },
+        method: 'POST',
+      });
+    } catch (err) {
+      return [errCode.service_unavailable, 'ChainDaemonError', err];
+    }
+
     const text = await res.text();
 
     let payload;
     try {
       payload = JSON.parse(text);
     } catch (parseErr) {
-      // Bitcoin Core returns plain-text bodies on auth/HTTP errors.
-      return cbk([errCode.service_unavailable, 'ChainDaemonError', {
+      return [errCode.service_unavailable, 'ChainDaemonError', {
         detail: text,
         status: res.status,
-      }]);
+      }];
     }
 
     if (payload && payload.error) {
-      return cbk([errCode.service_unavailable, 'ChainDaemonError', payload.error]);
+      return [errCode.service_unavailable, 'ChainDaemonError', payload.error];
     }
 
     if (!payload || payload.result === undefined) {
-      return cbk([errCode.service_unavailable, 'BadChainResponse']);
+      return [errCode.service_unavailable, 'BadChainResponse'];
     }
 
-    return cbk(null, payload.result);
-  })
-  .catch(err => {
-    return cbk([errCode.service_unavailable, 'ChainDaemonError', err]);
+    return payload.result;
+  };
+
+  run().then(result => {
+    if (Array.isArray(result) && result.length >= 2 && typeof result[1] === 'string') {
+      return cbk(result);
+    }
+    return cbk(null, result);
   });
 };

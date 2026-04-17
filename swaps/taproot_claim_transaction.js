@@ -17,16 +17,17 @@ const {TAPLEAF_VERSION} = taprootSwapAddress;
 const hashTypeDefault = 0x00; // SIGHASH_DEFAULT (implicit; Schnorr sig = 64 bytes)
 const dummySigByteLength = 64;
 const preimageByteLength = 32;
-const sequenceFinal = 0xffffffff;
+// Non-final so nLockTime is enforced. Legacy claim_transaction.js uses the
+// same convention; a fully-final (0xffffffff) sequence would silently disable
+// the locktime set on this transaction.
 const sequenceNonFinal = 0xfffffffe;
 const feeEstimateFallbackVbytes = 150; // ~vsize upper bound for taproot HTLC claim
+const varuint = require('varuint-bitcoin');
 
 const encodeTapleaf = ({script, version}) => {
-  const prefix = Buffer.from([version]);
-  const lenPrefix = bscript.number.encode(script.length);
   // BIP-341: tagged hash of (version || compact_size(script) || script)
-  const varInt = require('varuint-bitcoin').encode(script.length);
-  return Buffer.concat([prefix, Buffer.from(varInt), script]);
+  const varInt = Buffer.from(varuint.encode(script.length));
+  return Buffer.concat([Buffer.from([version]), varInt, script]);
 };
 
 const tapleafHash = ({script, version}) => {
@@ -117,7 +118,7 @@ module.exports = args => {
 
   args.utxos.forEach(u => {
     const txidBytes = Buffer.from(u.transaction_id, 'hex').reverse();
-    tx.addInput(txidBytes, u.vout, sequenceFinal);
+    tx.addInput(txidBytes, u.vout, sequenceNonFinal);
   });
 
   // First pass: estimate fee with a dummy 64-byte signature in the witness.

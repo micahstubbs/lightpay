@@ -12,8 +12,12 @@ const swapScriptDetails = require('./swap_script_details');
 const ECPair = ECPairFactory(ecc);
 const hashAll = Transaction.SIGHASH_ALL;
 const {sha256} = crypto;
-const {testnet} = networks;
 const {toOutputScript} = address;
+
+const networkForName = name => {
+  if (!name) { return networks.testnet; }
+  return networks[name === 'mainnet' ? 'bitcoin' : name] || networks.testnet;
+};
 
 const dustRatio = 1 / 3;
 const ecdsaSignatureLength = chainConstants.ecdsa_sig_max_byte_length;
@@ -77,7 +81,12 @@ module.exports = args => {
   }
 
   const preimage = Buffer.from(args.preimage, 'hex');
-  const signingKey = ECPair.fromWIF(args.private_key, testnet);
+  const network = networkForName(args.network);
+  const signingKey = ECPair.fromWIF(args.private_key, [
+    networks.bitcoin,
+    networks.testnet,
+    networks.regtest,
+  ]);
   const tokens = args.utxos.reduce((sum, n) => n.tokens + sum, 0);
   const tokensPerVirtualByte = args.fee_tokens_per_vbyte;
   const tx = new Transaction();
@@ -87,7 +96,7 @@ module.exports = args => {
     .map(n => ({txId: Buffer.from(n.transaction_id, 'hex'), vout: n.vout}))
     .forEach(n => tx.addInput(n.txId.reverse(), n.vout));
 
-  tx.addOutput(toOutputScript(args.destination, testnet), tokens);
+  tx.addOutput(toOutputScript(args.destination, network), tokens);
   tx.ins.forEach(n => n.sequence = minSequenceValue);
   tx.locktime = bip65Encode({blocks: args.current_block_height});
 

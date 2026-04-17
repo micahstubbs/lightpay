@@ -8,6 +8,29 @@ const bip32 = BIP32Factory(ecc);
 const minIndex = 0;
 const maxIndex = 4294967295;
 
+// mnemonicToSeedSync runs 2048 rounds of PBKDF2 and was being called on
+// every swap operation, blocking the event loop for ~100ms each time.
+// Cache the root node keyed by (mnemonic, network) so we do this once.
+const rootCache = new Map();
+
+const cacheKey = (mnemonic, network) => `${network}|${mnemonic}`;
+
+const getRoot = (mnemonic, networkName) => {
+  const key = cacheKey(mnemonic, networkName);
+  const cached = rootCache.get(key);
+
+  if (cached) {
+    return cached;
+  }
+
+  const seed = mnemonicToSeedSync(mnemonic);
+  const root = bip32.fromSeed(seed, networks[networkName]);
+
+  rootCache.set(key, root);
+
+  return root;
+};
+
 /** Server swap key pair
 
   {
@@ -39,10 +62,7 @@ module.exports = ({index, network}) => {
     throw new Error('ExpectedValidMnemonic');
   }
 
-  const seed = mnemonicToSeedSync(OCW_CLAIM_BIP39_SEED);
-
-  const root = bip32.fromSeed(seed, networks[network]);
-
+  const root = getRoot(OCW_CLAIM_BIP39_SEED, network);
   const child = root.derivePath(`m/0'/0/${index}`);
 
   return {

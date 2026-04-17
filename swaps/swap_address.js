@@ -1,16 +1,19 @@
-const {address, networks, payments} = require('bitcoinjs-lib');
-
-const {fromOutputScript} = address;
-const {testnet} = networks;
+const {networks, payments} = require('bitcoinjs-lib');
 
 const pkSwapScript = require('./pk_swap_script');
 const pkHashSwapScript = require('./pkhash_swap_script');
+
+const networkForName = name => {
+  if (!name) { return networks.testnet; }
+  return networks[name === 'mainnet' ? 'bitcoin' : name] || networks.testnet;
+};
 
 /** Derive a chain swap address for a swap
 
   @param
   {
     destination_public_key: <Destination Public Key Serialized String>
+    [network]: 'mainnet' | 'regtest' | 'testnet' (default testnet)
     payment_hash: <Payment Hash String>
     [refund_public_key]: <Refund Public Key Serialized String>
     [refund_public_key_hash]: <Refund Public Key Hash Hex String>
@@ -53,23 +56,24 @@ module.exports = args => {
   }
 
   const redeemScript = Buffer.from(redeemScriptHex, 'hex');
+  const network = networkForName(args.network);
 
   // Legacy P2SH: script-hash of the raw redeem script
   const p2sh = payments.p2sh({
-    redeem: {output: redeemScript, network: testnet},
-    network: testnet,
+    redeem: {output: redeemScript, network},
+    network,
   });
 
   // P2WSH: witness-script-hash of the raw redeem script
   const p2wsh = payments.p2wsh({
-    redeem: {output: redeemScript, network: testnet},
-    network: testnet,
+    redeem: {output: redeemScript, network},
+    network,
   });
 
   // P2SH-wrapped P2WSH (nested segwit)
   const p2shP2wsh = payments.p2sh({
     redeem: p2wsh,
-    network: testnet,
+    network,
   });
 
   return {

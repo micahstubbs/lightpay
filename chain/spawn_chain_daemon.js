@@ -17,10 +17,20 @@ const daemonBinary = process.env.OCW_CHAIN_DAEMON_BIN || defaultDaemonBinary;
 
   Derives a P2WPKH mining address from the given public key and exposes
   it on the resolved daemon object so callers can mine to it later via
-  `generatetoaddress`. The daemon's lifecycle is tied to this process;
-  any uncaught exception kills it before exit.
+  `generatetoaddress`.
 
-  Requires `bitcoind` on PATH (override with OCW_CHAIN_DAEMON_BIN).
+  Two operating modes:
+
+  - **Spawn mode (default)**: forks `bitcoind -regtest` and manages its
+    lifecycle. Requires `bitcoind` on PATH (override with
+    OCW_CHAIN_DAEMON_BIN). Suitable for dev machines with a local
+    Bitcoin Core install.
+
+  - **External mode** (`OCW_CHAIN_DAEMON_EXTERNAL=1`): assumes a
+    regtest daemon is already running on the RPC port configured in
+    chain/conf/chain_server.json and credentials match. Suitable for
+    CI and Docker Compose setups where `docker compose up bitcoind`
+    owns the daemon.
 
   {
     mining_public_key: <Mining Public Key Hex String>
@@ -28,8 +38,8 @@ const daemonBinary = process.env.OCW_CHAIN_DAEMON_BIN || defaultDaemonBinary;
 
   @returns via cbk
   {
-    daemon: <Spawned ChildProcess>
-    datadir: <Temporary Data Directory String>
+    daemon: <Spawned ChildProcess | null (external mode)>
+    datadir: <Temporary Data Directory String | null>
     mining_address: <P2WPKH Mining Address String>
   }
 */
@@ -44,6 +54,14 @@ module.exports = (args, cbk) => {
     pubkey: miningKey,
     network: networks.regtest,
   });
+
+  if (process.env.OCW_CHAIN_DAEMON_EXTERNAL === '1') {
+    return cbk(null, {
+      daemon: null,
+      datadir: null,
+      mining_address: miningAddress,
+    });
+  }
 
   const datadir = mkdtempSync(path.join(os.tmpdir(), 'lightpay-regtest-'));
 
