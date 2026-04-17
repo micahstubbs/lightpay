@@ -1,5 +1,4 @@
-const bodyParser = require('body-parser');
-const {Router} = require('express');
+const {json, Router} = require('express');
 
 const {checkSwapStatus} = require('./../service');
 const {createSwap} = require('./../service');
@@ -22,7 +21,7 @@ const minInvoiceTokens = 1e5;
 module.exports = ({log}) => {
   const router = Router({caseSensitive: true});
 
-  router.use(bodyParser.json());
+  router.use(json());
 
   // GET details about an address
   router.get('/address_details/:address', ({params}, res) => {
@@ -77,4 +76,3 @@ module.exports = ({log}) => {
 
   return router;
 };
-

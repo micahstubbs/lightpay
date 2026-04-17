@@ -4,3 +4,7 @@ node_modules
 
 # bv (beads viewer) local config and caches
 .bv/
+
+# esbuild-generated browser bundle
+public/js/blockchain.js
+public/js/blockchain.js.map
