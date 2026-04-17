@@ -1,23 +1,22 @@
 const chainServer = require('./conf/chain_server');
 const errCode = require('./conf/error_codes');
 
-const credentials = {
-  host: {
-    regtest: chainServer.regtest.rpc_host,
-    testnet: chainServer.testnet.rpc_host,
-  },
-  pass: {
-    regtest: chainServer.regtest.rpc_pass,
-    testnet: process.env.OCW_CHAIN_RPC_PASS,
-  },
-  port: {
-    regtest: chainServer.regtest.rpc_port,
-    testnet: chainServer.testnet.rpc_port,
-  },
-  user: {
-    regtest: chainServer.regtest.rpc_user,
-    testnet: chainServer.testnet.rpc_user,
-  },
+// Resolve per-network credentials from chain_server.json. Non-regtest
+// networks read their RPC password from OCW_CHAIN_RPC_PASS so it stays
+// out of version control.
+const credentialsFor = network => {
+  const conf = chainServer[network];
+
+  if (!conf) {
+    return null;
+  }
+
+  return {
+    host: conf.rpc_host,
+    pass: conf.rpc_pass || process.env.OCW_CHAIN_RPC_PASS,
+    port: conf.rpc_port,
+    user: conf.rpc_user,
+  };
 };
 
 let requestId = 0;
@@ -38,14 +37,13 @@ module.exports = ({cmd, network, params}, cbk) => {
     return cbk([errCode.local_err, 'ExpectedNetwork']);
   }
 
-  const host = credentials.host[network];
-  const pass = credentials.pass[network];
-  const port = credentials.port[network];
-  const user = credentials.user[network];
+  const creds = credentialsFor(network);
 
-  if (!host || !port || !user) {
+  if (!creds || !creds.host || !creds.port || !creds.user) {
     return cbk([errCode.local_err, 'MissingChainRpcCredentials', {network}]);
   }
+
+  const {host, pass, port, user} = creds;
 
   const niceParams = !Array.isArray(params || []) ? [params] : params || [];
   const auth = Buffer.from(`${user}:${pass || ''}`).toString('base64');

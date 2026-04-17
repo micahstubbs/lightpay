@@ -3,12 +3,12 @@ const asyncAuto = require('async/auto');
 const getAddressDetails = require('./get_address_details');
 const {getBlockchainInfo} = require('./../chain');
 const getInvoiceDetails = require('./get_invoice_details');
+const network = require('./network');
 const {returnResult} = require('./../async-util');
 const serverSwapKeyPair = require('./server_swap_key_pair');
 const {swapAddress} = require('./../swaps');
 
 const minSwapTokens = 1e5;
-const network = 'testnet';
 const swapRate = 0.015;
 const timeoutBlockCount = 144;
 

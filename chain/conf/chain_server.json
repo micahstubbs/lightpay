@@ -1,5 +1,6 @@
 {
   "// Default connection values for chain server connections": "",
+  "// Passwords may be overridden via OCW_CHAIN_RPC_PASS env var for testnet/mainnet": "",
 
   "regtest": {
     "rpc_host": "127.0.0.1",
@@ -11,6 +12,10 @@
     "rpc_host": "127.0.0.1",
     "rpc_port": 18332,
     "rpc_user": "bitcoinrpc"
+  },
+  "mainnet": {
+    "rpc_host": "127.0.0.1",
+    "rpc_port": 8332,
+    "rpc_user": "bitcoinrpc"
   }
 }
-

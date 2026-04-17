@@ -5,6 +5,7 @@ const {createSwap} = require('./../service');
 const {findSwapOutpoint} = require('./../service');
 const {getAddressDetails} = require('./../service');
 const {getInvoiceDetails} = require('./../service');
+const network = require('./../service/network');
 const {returnJson} = require('./../async-util');
 
 const minInvoiceTokens = 1e5;
@@ -44,7 +45,7 @@ module.exports = ({log}) => {
   // POST a swap output find details request
   router.post('/swap_outputs/', ({body}, res) => {
     return findSwapOutpoint({
-      network: 'testnet',
+      network,
       redeem_script: body.redeem_script,
     },
     returnJson({log, res}));

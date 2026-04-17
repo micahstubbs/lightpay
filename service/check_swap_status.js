@@ -4,6 +4,7 @@ const {Transaction} = require('bitcoinjs-lib');
 const completeSwapTransaction = require('./complete_swap_transaction');
 const findSwapTransaction = require('./find_swap_transaction');
 const {getBlockchainInfo} = require('./../chain');
+const network = require('./network');
 const {returnResult} = require('./../async-util');
 const serverSwapKeyPair = require('./server_swap_key_pair');
 const {swapAddress} = require('./../swaps');
@@ -13,7 +14,6 @@ const {swapScriptDetails} = require('./../swaps');
 const blockSearchDepth = 3;
 const minSwapTokens = 1e5;
 const minBlocksUntilRefundHeight = 70;
-const network = 'testnet';
 const requiredConfCount = 0;
 
 /** Check the status of a swap
