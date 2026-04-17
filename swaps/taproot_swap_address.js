@@ -1,4 +1,3 @@
-// @ts-check
 require('./ecc_init');
 
 const {networks, payments} = require('bitcoinjs-lib');

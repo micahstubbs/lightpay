@@ -1,4 +1,3 @@
-// @ts-check
 // Centralised bitcoinjs-lib ECC library initialization.
 // P2TR / Schnorr operations in bitcoinjs-lib v6 require initEccLib() to be
 // called exactly once before any payments.p2tr / Transaction.signSchnorr call.

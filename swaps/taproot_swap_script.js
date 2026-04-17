@@ -1,4 +1,3 @@
-// @ts-check
 const {opcodes, script} = require('bitcoinjs-lib');
 
 const hashByteLength = 32;

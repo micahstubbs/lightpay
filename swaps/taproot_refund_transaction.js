@@ -1,4 +1,3 @@
-// @ts-check
 require('./ecc_init');
 
 const bip65Encode = require('bip65').encode;
